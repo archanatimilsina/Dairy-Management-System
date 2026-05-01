@@ -26,7 +26,7 @@ const Products = () => {
     description: "",
     picture_src: null
   });
-
+const BACKEND_URL = "http://127.0.0.1:8000";
   const categories = ["All", "Milk", "Paneer", "Cheese", "Ghee", "Cake"];
 
  
@@ -149,7 +149,10 @@ const Products = () => {
           filteredProducts.map(product => (
             <TableRow key={product.id}>
               <div className="col-img">
-                <img src={product.picture_src || 'https://via.placeholder.com/50'} alt="" />
+                <img src={product.picture_src 
+        ? product.picture_src 
+        : 'https://via.placeholder.com/50'
+      } alt="" />
               </div>
               <div className="col-main">
                 <strong>{product.product_name}</strong>

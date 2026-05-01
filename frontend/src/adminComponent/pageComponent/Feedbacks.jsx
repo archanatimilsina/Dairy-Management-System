@@ -1,47 +1,32 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { 
   MessageSquare, Mail, Trash2, Reply, Search, 
   Filter, CheckCircle2, Clock, ChevronRight, User
 } from 'lucide-react';
-
+import useApi from '../../hooks/useApi';
 const Feedbacks = () => {
+  const {get} = useApi()
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedId, setSelectedId] = useState(1);
 
-  const [feedbacks] = useState([
-    { 
-      id: 1, 
-      name: "Siddharth Rana", 
-      email: "sid.rana@gmail.com", 
-      message: "The morning milk delivery was a bit late today, but the quality of the Whole Milk is excellent as always. Please check the delivery timing for Parsyang.",
-      date: "Oct 10, 2026",
-      isNew: true,
-      category: "Delivery"
-    },
-    { 
-      id: 2, 
-      name: "Anjali Joshi", 
-      email: "anjali.j@outlook.com", 
-      message: "I would love to see more varieties of flavored curd in the future! The current one is great.",
-      date: "Oct 09, 2026",
-      isNew: false,
-      category: "Product"
-    },
-    { 
-      id: 3, 
-      name: "Kiran KC", 
-      email: "kiran.kc@email.com", 
-      message: "Can you please update my subscription to 2 Liters starting from next Monday?",
-      date: "Oct 08, 2026",
-      isNew: false,
-      category: "Subscription"
-    }
-  ]);
+const [feedbacks, setFeedbacks] = useState([]);
+
+  useEffect(()=>{
+const fetchData= async ()=>
+{
+  const result = await get('feedback/listCreate/')
+  if(result.success)
+  {
+    setFeedbacks(result.data)
+  }
+}
+fetchData()
+  },[get])
 
   const filteredFeedbacks = feedbacks.filter(f => 
-    f.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    f.message.toLowerCase().includes(searchTerm.toLowerCase())
+    f.full_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    f.feedback_topic.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -66,23 +51,21 @@ const Feedbacks = () => {
       </Header>
 
       <MainLayout>
-        {/* LIST VIEW */}
         <ListView>
           {filteredFeedbacks.map(fb => (
             <FeedbackItem 
               key={fb.id} 
               $isActive={selectedId === fb.id}
-              $isNew={fb.isNew}
               onClick={() => setSelectedId(fb.id)}
             >
               <div className="item-main">
-                <Avatar>{fb.name.charAt(0)}</Avatar>
+                <Avatar>{fb.full_name.charAt(0)}</Avatar>
                 <div className="item-content">
                   <div className="item-top">
-                    <span className="name">{fb.name}</span>
-                    <span className="date">{fb.date}</span>
+                    <span className="name">{fb.full_name}</span>
+                    <span className="date">{fb.created_at}</span>
                   </div>
-                  <p className="preview">{fb.message}</p>
+                  <p className="preview">{fb.feedback}</p>
                 </div>
               </div>
               <ChevronRight size={16} className="arrow" />
@@ -90,23 +73,22 @@ const Feedbacks = () => {
           ))}
         </ListView>
 
-        {/* DETAIL VIEW */}
         <DetailView>
           {filteredFeedbacks.find(f => f.id === selectedId) ? (
             <DetailContent>
               <DetailHeader>
                 <div className="user-profile">
-                  <LargeAvatar>{filteredFeedbacks.find(f => f.id === selectedId).name.charAt(0)}</LargeAvatar>
+                  <LargeAvatar>{filteredFeedbacks.find(f => f.id === selectedId).full_name.charAt(0)}</LargeAvatar>
                   <div className="user-meta">
-                    <h3>{filteredFeedbacks.find(f => f.id === selectedId).name}</h3>
+                    <h3>{filteredFeedbacks.find(f => f.id === selectedId).full_name}</h3>
                     <span><Mail size={14}/> {filteredFeedbacks.find(f => f.id === selectedId).email}</span>
                   </div>
                 </div>
-                <CategoryBadge>{filteredFeedbacks.find(f => f.id === selectedId).category}</CategoryBadge>
+                <CategoryBadge>{filteredFeedbacks.find(f => f.id === selectedId).feedback_topic}</CategoryBadge>
               </DetailHeader>
 
               <MessageBody>
-                <p>{filteredFeedbacks.find(f => f.id === selectedId).message}</p>
+                <p>{filteredFeedbacks.find(f => f.id === selectedId).feedback}</p>
               </MessageBody>
 
               <ActionFooter>
@@ -126,7 +108,6 @@ const Feedbacks = () => {
   );
 };
 
-// --- STYLED COMPONENTS (Optimized for 2-Column Layout) ---
 
 const Container = styled.div`
   height: calc(100vh - 120px);

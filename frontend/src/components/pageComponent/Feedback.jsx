@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { useNavigate } from 'react-router-dom'; // Import this
+import { useNavigate } from 'react-router-dom'; 
 import { 
   Star, Truck, Package, 
   Lightbulb, HelpCircle, Send, CheckCircle, ArrowLeft 
 } from 'lucide-react';
-
+import useApi from '../../hooks/useApi';
 const Feedback = () => {
-  const navigate = useNavigate(); // Initialize navigate
+  const {post} = useApi()
+  const navigate = useNavigate();
   const [feedback, setFeedback] = useState({
+    full_name: localStorage.getItem('first_name')+ " "+ localStorage.getItem("last_name"),
+    email : localStorage.getItem('email'),
     category: 'product',
     message: '',
   });
@@ -23,9 +26,13 @@ const Feedback = () => {
     { id: 'other', label: 'Other', icon: <HelpCircle size={20} /> },
   ];
 
-  const handleSubmit = (e) => {
+  const handleSubmit =async (e) => {
     e.preventDefault();
-    console.log("Submitting Feedback:", feedback);
+    const result= await post('feedback/listCreate/' , feedback)
+    if(result.success)
+    {
+      console.log("feedback sent")
+    }
     setSubmitted(true);
   };
 
@@ -46,7 +53,6 @@ const Feedback = () => {
   return (
     <Container>
       <HeaderSection>
-        {/* Top left back button */}
         <BackButton onClick={() => navigate(-1)}>
           <ArrowLeft size={18} /> Back
         </BackButton>
@@ -60,7 +66,7 @@ const Feedback = () => {
           {categories.map((cat) => (
             <CategoryCard 
               key={cat.id}
-              active={feedback.category === cat.id}
+              $active={feedback.category === cat.id}
               onClick={() => setFeedback({...feedback, category: cat.id})}
               type="button"
             >
@@ -85,7 +91,6 @@ const Feedback = () => {
           <SubmitButton type="submit">
             <Send size={18} /> Submit Feedback
           </SubmitButton>
-          {/* Bottom back button as an alternative */}
           <CancelButton type="button" onClick={() => navigate(-1)}>
             Cancel
           </CancelButton>
@@ -95,7 +100,6 @@ const Feedback = () => {
   );
 };
 
-// --- STYLES ---
 
 const Container = styled.div`
   max-width: 800px; margin: 0 auto; padding: 60px 20px;
@@ -131,9 +135,9 @@ const CategoryGrid = styled.div`
 
 const CategoryCard = styled.button`
   display: flex; flex-direction: column; align-items: center; gap: 10px;
-  padding: 15px; border-radius: 16px; border: 2px solid ${props => props.active ? '#7DAACB' : '#f1f2f6'};
-  background: ${props => props.active ? '#f8fbff' : 'white'};
-  color: ${props => props.active ? '#7DAACB' : '#636e72'};
+  padding: 15px; border-radius: 16px; border: 2px solid ${props => props.$active ? '#7DAACB' : '#f1f2f6'};
+  background: ${props => props.$active ? '#f8fbff' : 'white'};
+  color: ${props => props.$active ? '#7DAACB' : '#636e72'};
   cursor: pointer; transition: 0.2s;
   span { font-size: 0.8rem; font-weight: 600; }
   &:hover { border-color: #7DAACB; }

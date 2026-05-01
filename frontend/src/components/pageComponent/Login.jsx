@@ -21,8 +21,10 @@ setFormData({...formData,[e.target.name]:e.target.value});
      e.preventDefault()
      const result= await post('login/',formData)
      if(result.success){
+localStorage.setItem("email", result.data?.user.email)
+localStorage.setItem("username", result.data?.user.username)
 localStorage.setItem('access_token',result.data?.access)
-localStorage.setItem('refresh_token',result.data.refresh)
+localStorage.setItem('refresh_token',result.data?.refresh)
 navigate('/')
      }
 
