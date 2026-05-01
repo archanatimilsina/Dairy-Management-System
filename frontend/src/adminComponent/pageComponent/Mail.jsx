@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Send, Paperclip, X, User, Type, MessageSquare } from 'lucide-react';
-
+import useApi from '../../hooks/useApi';
 const SendMailPage = () => {
+  const {post} = useApi()
   const [formData, setFormData] = useState({
     to: "",
     subject: "",
@@ -16,11 +17,14 @@ const SendMailPage = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSend = (e) => {
+  const handleSend = async(e) => {
     e.preventDefault();
     setIsSending(true);
-    
-    // Simulate API Call
+    const result = await post('sendMail/', formData)
+    if(result.success)
+    {
+      console.log("Email Sent")
+    }
     setTimeout(() => {
       alert(`Email sent to ${formData.to}!`);
       setIsSending(false);

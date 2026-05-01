@@ -13,7 +13,9 @@ from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
 from .services import send_custom_mail
 from rest_framework import generics
-
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.core.mail import EmailMultiAlternatives
 
 
 class RegisterView(APIView):
@@ -93,7 +95,7 @@ class PasswordResetView(APIView):
            success= send_custom_mail(
               subject="Reset your Password",
               recipient_email= user.email,
-              template_name='emailFormat.html',
+              template_name='resetPassword.html',
               context={
                  'username': user.username,
                  'content': "Click the following link to reset your password",
@@ -132,3 +134,18 @@ class UserListView(generics.ListAPIView):
    serializer_class = UserSerializer
 
    
+class SendDirectMailView(APIView):
+   def post(self, request):
+      to_email = request.data.get('to')
+      subject = request.data.get('subject')
+      message = request.data.get('message')
+      attachment = request.FILES.get('attachment')
+
+      context ={
+         'subject': subject,
+          'content': message,
+          'username': to_email.split('@')[0],
+          'attachment' : attachment
+                     }
+      success = send_custom_mail(subject,to_email,'generalEmailFormat.html',context)
+
