@@ -25,10 +25,8 @@ const ContactsPage = () => {
   //     status: "Resolved"
   //   }
   // ]);
-  const {get} = useApi()
-  const [contacts, setContacts] = useState([
- 
-  ]);
+  const {get,patch} = useApi()
+  const [contacts, setContacts] = useState([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingContact, setEditingContact] = useState(null);
@@ -36,14 +34,16 @@ const ContactsPage = () => {
 
   const openEditModal = (contact) => {
     setEditingContact(contact);
-    setTempNote(contact.adminNote);
+    setTempNote(contact.admin_note);
     setIsModalOpen(true);
   };
 
-  const handleSaveNote = () => {
-    setContacts(contacts.map(c => 
-      c.id === editingContact.id ? { ...c, adminNote: tempNote } : c
-    ));
+  const handleSaveNote = async () => {
+const result = await patch(`contact/detail/${editingContact.id}`,{ admin_note: tempNote })
+if(result.success)
+{
+  console.log("Admin Note kept")
+}
     setIsModalOpen(false);
   };
 
@@ -58,7 +58,11 @@ useEffect(()=>{
     }
   }
   fetchData()
+
+
 },[get])
+
+
 
 
   return (
@@ -90,7 +94,7 @@ useEffect(()=>{
               </td>
               <td>
                 <NoteArea onClick={() => openEditModal(contact)}>
-                  {contact.adminNote || "Add a note..."}
+                  {contact.admin_note || "Add a note..."}
                 </NoteArea>
               </td>
               <td>
@@ -118,7 +122,7 @@ useEffect(()=>{
               </button>
             </ModalHeader>
             <ModalBody>
-              <p>Adding note for: <strong>{editingContact?.name}</strong></p>
+              <p>Adding note for: <strong>{editingContact?.full_name}</strong></p>
               <textarea 
                 value={tempNote} 
                 onChange={(e) => setTempNote(e.target.value)}
