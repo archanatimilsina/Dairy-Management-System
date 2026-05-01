@@ -1,6 +1,14 @@
 from django.contrib import admin
 from .models import Profile
-# Register your models here.
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import User
+
+admin.site.unregister(User)
+
+@admin.register(User)
+class UserAdmin(admin.ModelAdmin):
+    list_display = ('id', 'email', 'username', 'first_name', 'last_name', 'date_joined','is_active')
+
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
@@ -13,5 +21,4 @@ class ProfileAdmin(admin.ModelAdmin):
     def get_email(self, obj):
         return obj.user.email
     get_email.short_description = 'Email'
-
 

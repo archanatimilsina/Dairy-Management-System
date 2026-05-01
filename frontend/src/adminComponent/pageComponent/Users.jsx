@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { 
   Users, 
@@ -11,30 +11,41 @@ import {
   Filter,
   ArrowUpDown
 } from 'lucide-react';
-
+import useApi from '../../hooks/useApi';
 const UsersReport = () => {
+  const {get} = useApi()
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
 
-  // Sample User Database
-  const [users] = useState([
-    { id: 1, name: "Archana Timilsina", email: "archana@email.com", phone: "9841223344", type: "Regular", joined: "Jan 12, 2026", status: "active" },
-    { id: 2, name: "Siddharth Rana", email: "sid.rana@gmail.com", phone: "9801122334", type: "Regular", joined: "Feb 05, 2026", status: "active" },
-    { id: 3, name: "Anjali Joshi", email: "anjali.j@outlook.com", phone: "9811556677", type: "One-time", joined: "Mar 20, 2026", status: "inactive" },
-    { id: 4, name: "Bibek Thapa", email: "thapa.bibek@email.com", phone: "9851098765", type: "Regular", joined: "Apr 01, 2026", status: "active" },
-    { id: 5, name: "Gopal KC", email: "gopal.kc@gmail.com", phone: "9867001122", type: "One-time", joined: "Apr 08, 2026", status: "active" },
-  ]);
+
+  const [users, setUsers] = useState([])
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const name = user.first_name +" "+ user.last_name
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = filterType === "all" ? true : user.type === filterType;
+    const matchesType = filterType === "all" ? true : user.user_type === filterType;
     return matchesSearch && matchesType;
   });
 
+useEffect( ()=>
+{
+  const fetchData = async ()=> {
+const result = await get('user/listView/')
+if(result.success)
+{
+  console.log(result.data)
+  setUsers(result.data)
+}
+  }
+
+fetchData();
+
+},[get])
+
+
   return (
     <Container className="page-fade-in">
-      {/* 1. HEADER & ACTIONS */}
       <HeaderSection>
         <div>
           <h2>Customer Directory</h2>
@@ -46,7 +57,6 @@ const UsersReport = () => {
         </AddUserBtn>
       </HeaderSection>
 
-      {/* 2. STATS OVERVIEW */}
       <StatsRow>
         <StatCard>
           <div className="icon active"><Users size={20}/></div>
@@ -59,12 +69,11 @@ const UsersReport = () => {
           <div className="icon regular"><Calendar size={20}/></div>
           <div className="data">
             <span>Regular (Subs)</span>
-            <h3>{users.filter(u => u.type === 'Regular').length}</h3>
+            <h3>{users.filter(u => u.user_type === 'Regular').length}</h3>
           </div>
         </StatCard>
       </StatsRow>
 
-      {/* 3. SEARCH & FILTERS */}
       <FilterBar>
         <SearchWrapper>
           <Search size={18} />
@@ -83,16 +92,19 @@ const UsersReport = () => {
           >All</FilterBtn>
           <FilterBtn 
             $active={filterType === 'Regular'} 
-            onClick={() => setFilterType('Regular')}
+            onClick={() => setFilterType('regular')}
           >Regular</FilterBtn>
           <FilterBtn 
-            $active={filterType === 'One-time'} 
-            onClick={() => setFilterType('One-time')}
-          >One-time</FilterBtn>
+            $active={filterType === 'Visitor'} 
+            onClick={() => setFilterType('visitor')}
+          >Visitor</FilterBtn>
+          <FilterBtn 
+            $active={filterType === 'Occasional'} 
+            onClick={() => setFilterType('occasional')}
+          >Occasional</FilterBtn>
         </ButtonGroup>
       </FilterBar>
 
-      {/* 4. USERS TABLE */}
       <TableContainer>
         <UserTable>
           <thead>
@@ -110,20 +122,24 @@ const UsersReport = () => {
               <tr key={user.id}>
                 <td>
                   <UserCell>
-                    <div className="avatar">{user.name.charAt(0)}</div>
-                    <strong>{user.name}</strong>
+                    <div className="avatar">{user.first_name.charAt(0) || '?'}</div>
+                    <strong>{user.first_name + user.last_name}</strong>
                   </UserCell>
                 </td>
                 <td>
                   <ContactCell>
                     <div className="item"><Mail size={12}/> {user.email}</div>
-                    <div className="item"><Phone size={12}/> {user.phone}</div>
+                    <div className="item"><Phone size={12}/> {user.contact}</div>
                   </ContactCell>
                 </td>
                 <td>
-                  <TypeTag $type={user.type}>{user.type}</TypeTag>
+                  <TypeTag $type={user.user_type}>{user.user_type}</TypeTag>
                 </td>
-                <td className="date-cell">{user.joined}</td>
+                <td className="date-cell">{new Date(user.date_joined).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })}</td>
                 <td>
                   <StatusBadge $status={user.status}>{user.status}</StatusBadge>
                 </td>

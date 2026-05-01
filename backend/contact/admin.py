@@ -3,5 +3,5 @@ from .models import Contact
 
 @admin.register(Contact)
 class ContactAdmin(admin.ModelAdmin):
-    list_display=('full_name','email','subject','message','admin_note','status')
-
+    #showng all fields of Contact Tab;e
+    list_display = [field.name for field in Contact._meta.fields]

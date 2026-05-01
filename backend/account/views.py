@@ -6,12 +6,13 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from .serializers import (
-   RegisterSerializer
+   RegisterSerializer, UserSerializer
 )
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
 from .services import send_custom_mail
+from rest_framework import generics
 
 
 
@@ -122,5 +123,12 @@ class PasswordResetConfirmView(APIView):
         return Response({"error": "Invalid or expired token."}, status=status.HTTP_400_BAD_REQUEST)
       except (TypeError, ValueError, OverflowError, User.DoesNotExist):
        return Response({"error": "Invalid request parameters."}, status=status.HTTP_400_BAD_REQUEST)
+
+   
+
+
+class UserListView(generics.ListAPIView):
+   queryset = User.objects.all()
+   serializer_class = UserSerializer
 
    

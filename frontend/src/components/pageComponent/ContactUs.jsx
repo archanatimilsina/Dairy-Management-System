@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { useNavigate } from 'react-router-dom'; // 1. Import hook
+import { useNavigate } from 'react-router-dom'; 
 import { Mail, Phone, MapPin, Send, MessageSquare, User, Notebook, ArrowLeft } from 'lucide-react';
-
+import useApi from '../../hooks/useApi';
 const Contact = () => {
-  const navigate = useNavigate(); // 2. Initialize navigate
+  const {post} = useApi()
+  const navigate = useNavigate(); 
   
   const [formData, setFormData] = useState({
-    name: '',
+    full_name: '',
     email: '',
     subject: '',
     message: ''
@@ -20,22 +21,25 @@ const Contact = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus('sending');
     
-    console.log("Sending Inquiry:", formData);
-    
+    const result = await post('contact/listCreate/',formData)
+    if(result.success)
+    {
+      console.log("Contact Detail is sent")
+
+    }
     setTimeout(() => {
       setStatus('success');
-      setFormData({ name: '', email: '', subject: '', message: '' });
+      setFormData({ full_name: '', email: '', subject: '', message: '' });
     }, 1500);
   };
 
   return (
     <Container className="page-fade-in">
       <SectionTitle>
-        {/* 3. Top Back Button */}
         <BackButton onClick={() => navigate(-1)}>
           <ArrowLeft size={18} /> Back
         </BackButton>
@@ -88,7 +92,7 @@ const Contact = () => {
                 <label><User size={16}/> Full Name</label>
                 <input 
                   type="text" 
-                  name="name"
+                  name="full_name"
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="Your Name" 
@@ -143,7 +147,6 @@ const Contact = () => {
   );
 };
 
-// --- STYLES ---
 
 const Container = styled.div`
   max-width: 1100px; margin: 0 auto; padding: 60px 20px;

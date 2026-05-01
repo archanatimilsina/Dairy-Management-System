@@ -1,29 +1,33 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { Edit2, Trash2, ExternalLink, X } from 'lucide-react';
-
+import useApi from '../../hooks/useApi';
 const ContactsPage = () => {
+  // const [contacts, setContacts] = useState([
+  //   { 
+  //     id: 1, 
+  //     name: "Suman Sharma", 
+  //     email: "suman@email.com", 
+  //     phone: "9841XXXXXX", 
+  //     subject: "Wholesale Inquiry", 
+  //     message: "Interested in 20L milk daily for my cafe.",
+  //     adminNote: "Follow up on Monday with price list.",
+  //     status: "New"
+  //   },
+  //   { 
+  //     id: 2, 
+  //     name: "Binita Thapa", 
+  //     email: "binita@email.com", 
+  //     phone: "9812XXXXXX", 
+  //     subject: "Delivery Delay", 
+  //     message: "The milk arrived at 8 AM instead of 7 AM today.",
+  //     adminNote: "Apology sent. Checking with driver Ram.",
+  //     status: "Resolved"
+  //   }
+  // ]);
+  const {get} = useApi()
   const [contacts, setContacts] = useState([
-    { 
-      id: 1, 
-      name: "Suman Sharma", 
-      email: "suman@email.com", 
-      phone: "9841XXXXXX", 
-      subject: "Wholesale Inquiry", 
-      message: "Interested in 20L milk daily for my cafe.",
-      adminNote: "Follow up on Monday with price list.",
-      status: "New"
-    },
-    { 
-      id: 2, 
-      name: "Binita Thapa", 
-      email: "binita@email.com", 
-      phone: "9812XXXXXX", 
-      subject: "Delivery Delay", 
-      message: "The milk arrived at 8 AM instead of 7 AM today.",
-      adminNote: "Apology sent. Checking with driver Ram.",
-      status: "Resolved"
-    }
+ 
   ]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,6 +46,20 @@ const ContactsPage = () => {
     ));
     setIsModalOpen(false);
   };
+
+
+useEffect(()=>{
+  const fetchData = async ()=>{
+    const result = await get('contact/listCreate/')
+    if(result.success){
+      console.log(result.data)
+      setContacts(result.data)
+
+    }
+  }
+  fetchData()
+},[get])
+
 
   return (
     <div className="page-fade-in">

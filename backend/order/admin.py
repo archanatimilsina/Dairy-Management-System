@@ -9,7 +9,11 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
-    list_display=('id','order','product','quantity','product_name','unit','price_at_purchase')
+    list_display=('id','order','product','quantity','product_name','unit','price_at_purchase','get_fullname')
+
+    def get_fullname(self, obj):
+       return obj.order.full_name
+    get_fullname.short_description = 'full_name'
 
 
 
