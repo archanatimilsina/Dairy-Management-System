@@ -26,4 +26,6 @@ def send_custom_mail(subject, recipient_email, template_name, context, attachmen
         return False
     
 
+    
+
         

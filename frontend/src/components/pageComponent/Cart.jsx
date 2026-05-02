@@ -130,7 +130,6 @@ const Cart = () => {
   );
 };
 
-// --- STYLES ---
 
 const SelectAllBar = styled.div`
   display: flex;

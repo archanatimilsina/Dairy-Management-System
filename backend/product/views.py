@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
-from .models import Product
+from .models import Product, Cart
 from rest_framework import generics
-from .serializers import ProductSerializer
+from .serializers import ProductSerializer, CartSerializer
 
 
 
@@ -17,5 +17,14 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 
+class CartListCreateView(generics.ListCreateAPIView):
+   queryset = Cart.objects.all()
+   serializer_class = CartSerializer
+   def perform_create(self, serializer):
+      serializer.save(user= self.request.user)
 
+class CartDetailView(generics.RetrieveUpdateDestroyAPIView):
+   queryset = Cart.objects.all()
+   serializer_class = CartSerializer
+   
 
