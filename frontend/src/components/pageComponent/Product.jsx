@@ -4,268 +4,350 @@ import Navbar from '../elementComponent/Navbar';
 import FooterSection from '../elementComponent/Footer';
 import useApi from '../../hooks/useApi';
 import { useNavigate } from 'react-router-dom';
+import { FiSearch, FiShoppingBag, FiCheckCircle } from 'react-icons/fi';
+
 const ProductPage = () => {
-  const {get, post} = useApi()
-const navigate = useNavigate()
+  const { get, post } = useApi();
+  const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState("All");
-const [products, setProducts] = useState([])
-const [cartItems, setCartItems] = useState([])
+  const [searchQuery, setSearchQuery] = useState("");
+  const [products, setProducts] = useState([]);
+  const [cartItems, setCartItems] = useState([]);
 
-useEffect(()=>
-{
- const fetchProducts =async ()=>
-{
-const result = await get('product/listCreate/')
-if(result.success)
-{
-setProducts(result.data)
-}
-}
-const fetchCartItems = async ()=>
-{
-const result = await get('product/cart/listCreate/')
-if(result.success)
-{
-  setCartItems(result.data)
-}
-}
-fetchProducts()
-fetchCartItems()
-},[get])
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const result = await get('product/listCreate/');
+      if (result.success) setProducts(result.data);
+    };
+    const fetchCartItems = async () => {
+      const result = await get('product/cart/listCreate/');
+      if (result.success) setCartItems(result.data);
+    };
+    fetchProducts();
+    fetchCartItems();
+  }, [get]);
 
+  const isProductInCart = (productId) => {
+    return cartItems.some(item => item.product === productId);
+  };
 
-const isProductInCart = (productId)=>
-{
-return cartItems.some(item=> item.product === productId)
-}
-
-
-const addToCart = async (productID)=>
-{
-  if(!localStorage.getItem("IsLoggedIn")){
-navigate('/loginPage')
-  }
-const result = await post('product/cart/listCreate/',{
-  product: productID
- })
-if(result.success)
-{
-  console.log(result.data)
-  setCartItems([...cartItems,result.data])
-  console.log(cartItems)
-}
-}
-
-
+  const addToCart = async (productID) => {
+    if (!localStorage.getItem("IsLoggedIn")) {
+      navigate('/loginPage');
+      return;
+    }
+    const result = await post('product/cart/listCreate/', { product: productID });
+    if (result.success) {
+      setCartItems([...cartItems, result.data]);
+    }
+  };
 
   const categories = ["All", "Milk", "Paneer", "Cheese", "Nauni", "Ghee", "Cake"];
-  
-  const filteredProducts = activeFilter === "All" 
-    ? products 
-    : products.filter(p => p.category === activeFilter);
+
+  const filteredProducts = products.filter(p => {
+    const matchesCategory = activeFilter === "All" || p.category === activeFilter;
+    const matchesSearch = p.product_name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <PageWrapper>
       <Navbar />
-      <HeaderSection>
-        <h1>Our Fresh Shop</h1>
-        <p>Direct from local farms to your kitchen.</p>
-      </HeaderSection>
+      
+      <HeroSection>
+        <div className="hero-content">
+          <h1>Elsa Premium Dairy</h1>
+          <p>Pure. Organic. Fresh from the Farm.</p>
+          <SearchWrapper>
+            <FiSearch className="search-icon" />
+            <input 
+              type="text" 
+              placeholder="Search for milk, ghee, cakes..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </SearchWrapper>
+        </div>
+      </HeroSection>
 
-      <MainLayout>
+      <MainContainer>
         <Sidebar>
-          <h3>Categories</h3>
-          <div className="filter-list">
+          <SidebarTitle>Categories</SidebarTitle>
+          <FilterList>
             {categories.map((cat) => (
-              <FilterBtn 
+              <FilterItem 
                 key={cat} 
                 $active={activeFilter === cat}
                 onClick={() => setActiveFilter(cat)}
               >
                 {cat}
-              </FilterBtn>
+                {activeFilter === cat && <div className="active-dot" />}
+              </FilterItem>
             ))}
-          </div>
+          </FilterList>
         </Sidebar>
 
-        <ProductGridContainer>
-          <GridHeader>
-            <span>Showing {filteredProducts.length} Products</span>
-          </GridHeader>
+        <ContentArea>
+          <ResultsInfo>
+            <h2>{activeFilter} Collection</h2>
+            <span>{filteredProducts.length} items found</span>
+          </ResultsInfo>
+
           <ProductGrid>
             {filteredProducts.map((product) => (
-              <ProductItem key={product.id}>
-                <div className="img-box">
+              <ProductCard key={product.id}>
+                <ImageContainer>
                   <img src={product.picture_src} alt={product.product_name} />
-                  <span className="tag">{product.category}</span>
-                </div>
-                <div className="details">
-                  <div className="header-info">
+                  <CategoryBadge>{product.category}</CategoryBadge>
+                </ImageContainer>
+                
+                <CardBody>
+                  <div className="meta">
                     <h4>{product.product_name}</h4>
-                    <span className="unit">/{product.unit}</span>
+                    <span className="unit">{product.unit}</span>
                   </div>
-                  <div className="price-row">
-                    <span className="price">Rs. {product.price}</span>
-                  </div>
+                  
+                  <PriceRow>
+                    <span className="currency">Rs.</span>
+                    <span className="amount">{product.price}</span>
+                  </PriceRow>
 
-                  <ActionArea>
-                    <button className="sub-btn">
-                      <span className="icon">Regular Order</span> 
-                    </button>
-                    <div className="buy-row">
-                      <button className="cart-btn" onClick={()=>{addToCart(product.id)}} disabled={isProductInCart(product.id)}>{isProductInCart(product.id)? "In cart": "Add to Cart"}</button>
-                      <button className="buy-btn">Buy Now</button>
-                    </div>
-                  </ActionArea>
-                </div>
-              </ProductItem>
+                  <ButtonGroup>
+                    <CartButton 
+                      onClick={() => addToCart(product.id)} 
+                      disabled={isProductInCart(product.id)}
+                      $inCart={isProductInCart(product.id)}
+                    >
+                      {isProductInCart(product.id) ? (
+                        <><FiCheckCircle /> In Cart</>
+                      ) : (
+                        <><FiShoppingBag /> Add</>
+                      )}
+                    </CartButton>
+                    <BuyNowButton>Buy Now</BuyNowButton>
+                  </ButtonGroup>
+                </CardBody>
+              </ProductCard>
             ))}
           </ProductGrid>
-        </ProductGridContainer>
-      </MainLayout>
+        </ContentArea>
+      </MainContainer>
+      <FooterSection />
     </PageWrapper>
   );
 };
 
 
 const PageWrapper = styled.div`
-  background: #f8fbff;
-  min-height: 100vh;
+  background-color: #fcfdfe;
+  color: #1a1a1a;
+  font-family: 'Inter', sans-serif;
 `;
 
-const HeaderSection = styled.div`
-  text-align: center;
-  padding: 80px 5%;
-  background: linear-gradient(135deg, #CFECF3 0%, #ffffff 100%);
-  h1 { font-size: 3.2rem; color: #2d3436; margin-bottom: 10px; }
-  p { color: #7DAACB; font-size: 1.1rem; font-weight: 500; }
-`;
-
-const MainLayout = styled.div`
-  max-width: 1440px;
-  margin: 0 auto;
+const HeroSection = styled.div`
+  height: 400px;
+  background: linear-gradient(rgba(0,0,0,0.05), rgba(0,0,0,0.05)), 
+              url('https://images.unsplash.com/photo-1528498033373-3c6c08e93d79?auto=format&fit=crop&q=80&w=2000');
+  background-size: cover;
+  background-position: center;
   display: flex;
-  padding: 40px 5%;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+
+  .hero-content {
+    h1 { font-size: 3.5rem; font-weight: 900; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+    p { color: #fff; font-size: 1.2rem; margin-bottom: 30px; opacity: 0.9; }
+  }
+`;
+
+const SearchWrapper = styled.div`
+  background: white;
+  padding: 10px 25px;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  width: 500px;
+  max-width: 90vw;
+  margin: 0 auto;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+
+  .search-icon { color: #7DAACB; font-size: 1.2rem; }
+  input {
+    border: none;
+    outline: none;
+    padding: 10px 15px;
+    width: 100%;
+    font-size: 1rem;
+    &::placeholder { color: #a0a0a0; }
+  }
+`;
+
+const MainContainer = styled.div`
+  max-width: 1300px;
+  margin: -50px auto 80px;
+  display: grid;
+  grid-template-columns: 280px 1fr;
   gap: 40px;
-  @media (max-width: 900px) { flex-direction: column; }
+  padding: 0 20px;
+
+  @media (max-width: 1000px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 const Sidebar = styled.aside`
-  flex: 0 0 260px;
-  h3 { margin-bottom: 24px; font-size: 1.4rem; color: #2d3436; font-weight: 800; }
-  .filter-list { display: flex; flex-direction: column; gap: 12px; }
+  background: white;
+  padding: 30px;
+  border-radius: 24px;
+  height: fit-content;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+  position: sticky;
+  top: 100px;
 `;
 
-const FilterBtn = styled.button`
-  text-align: left;
-  padding: 14px 24px;
-  border-radius: 16px;
-  border: 2px solid ${props => props.active ? '#7DAACB' : 'transparent'};
-  background: ${props => props.active ? 'white' : 'transparent'};
-  color: ${props => props.active ? '#2d3436' : '#636e72'};
-  font-weight: 700;
+const SidebarTitle = styled.h3`
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #999;
+  margin-bottom: 20px;
+`;
+
+const FilterList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const FilterItem = styled.div`
+  padding: 12px 18px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  &:hover { background: white; color: #2d3436; transform: translateX(5px); }
+  font-weight: 600;
+  color: ${props => props.$active ? '#2d3436' : '#777'};
+  background: ${props => props.$active ? '#f0f7ff' : 'transparent'};
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: 0.2s;
+
+  &:hover { background: #f8fbff; color: #2d3436; }
+  
+  .active-dot {
+    width: 6px;
+    height: 6px;
+    background: #7DAACB;
+    border-radius: 50%;
+  }
 `;
 
-const ProductGridContainer = styled.div`
-  flex: 1;
-`;
+const ContentArea = styled.main``;
 
-const GridHeader = styled.div`
+const ResultsInfo = styled.div`
   margin-bottom: 30px;
-  span { font-weight: 600; color: #b2bec3; text-transform: uppercase; letter-spacing: 1px; font-size: 0.8rem; }
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  h2 { font-size: 1.8rem; font-weight: 800; color: #2d3436; }
+  span { color: #999; font-weight: 500; }
 `;
 
 const ProductGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 35px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 25px;
 `;
 
-const ProductItem = styled.div`
+const ProductCard = styled.div`
   background: white;
-  border-radius: 28px;
+  border-radius: 20px;
   overflow: hidden;
-  border: 1px solid #f0f3f7;
-  transition: 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-  &:hover { transform: translateY(-10px); box-shadow: 0 30px 60px rgba(125, 170, 203, 0.15); }
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid #f0f0f0;
 
-  .img-box {
-    height: 240px;
-    position: relative;
-    img { width: 100%; height: 100%; object-fit: cover; }
-    .tag {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background: white;
-      padding: 6px 16px;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 800;
-      color: #7DAACB;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-  }
-
-  .details {
-    padding: 25px;
-    .header-info {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      h4 { font-size: 1.4rem; color: #2d3436; margin-bottom: 5px; }
-      .unit { font-size: 0.85rem; color: #b2bec3; font-weight: 600; }
-    }
-    .price { font-size: 1.8rem; font-weight: 900; color: #2d3436; }
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
   }
 `;
 
-const ActionArea = styled.div`
-  margin-top: 25px;
+const ImageContainer = styled.div`
+  height: 200px;
+  position: relative;
+  overflow: hidden;
+  img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
+  ${ProductCard}:hover img { transform: scale(1.05); }
+`;
+
+const CategoryBadge = styled.span`
+  position: absolute;
+  bottom: 15px;
+  left: 15px;
+  background: rgba(255,255,255,0.9);
+  backdrop-filter: blur(5px);
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #7DAACB;
+  text-transform: uppercase;
+`;
+
+const CardBody = styled.div`
+  padding: 20px;
+  .meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    h4 { font-size: 1.1rem; font-weight: 700; color: #2d3436; }
+    .unit { font-size: 0.8rem; color: #aaa; }
+  }
+`;
+
+const PriceRow = styled.div`
+  margin-bottom: 20px;
+  .currency { font-size: 0.9rem; font-weight: 600; color: #7DAACB; margin-right: 4px; }
+  .amount { font-size: 1.4rem; font-weight: 800; color: #2d3436; }
+`;
+
+const ButtonGroup = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+`;
+
+const CartButton = styled.button`
+  border: none;
+  border-radius: 12px;
+  padding: 10px;
+  font-weight: 700;
+  font-size: 0.85rem;
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: 0.3s;
+  background: ${props => props.$inCart ? '#e7f3ff' : '#f5f5f5'};
+  color: ${props => props.$inCart ? '#007bff' : '#555'};
+  
+  &:hover { background: ${props => props.$inCart ? '#e7f3ff' : '#e0e0e0'}; }
+`;
 
-  button {
-    border: none;
-    border-radius: 14px;
-    padding: 14px;
-    font-weight: 700;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: 0.3s;
-  }
+const BuyNowButton = styled.button`
+  border: none;
+  border-radius: 12px;
+  padding: 10px;
+  background: #2d3436;
+  color: white;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: 0.3s;
 
-  .sub-btn {
-    background: #eef7f9;
-    color: #5a8ba3;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    &:hover { background: #CFECF3; color: #2d3436; }
-  }
-
-  .buy-row {
-    display: flex;
-    gap: 10px;
-    .cart-btn {
-      flex: 1;
-      background: #f8f9fa;
-      color: #2d3436;
-      &:hover { background: #e9ecef; }
-    }
-    .buy-btn {
-      flex: 1.5;
-      background: #2d3436;
-      color: white;
-      &:hover { background: #7DAACB; }
-    }
-  }
+  &:hover { background: #7DAACB; }
 `;
 
 export default ProductPage;

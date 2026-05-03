@@ -4,19 +4,18 @@ import {
   ArrowLeft, Phone, Mail, CheckCircle2, 
   QrCode, Landmark, Wallet, Copy, ExternalLink 
 } from 'lucide-react';
-
+import { useNavigate } from 'react-router-dom';
 const Checkout = () => {
-  const [method, setMethod] = useState('esewa'); // esewa, bank, or manual
+  const [method, setMethod] = useState('esewa'); 
   const [isOrdered, setIsOrdered] = useState(false);
-
+const navigate = useNavigate()
   const orderDetails = {
     id: "ED-10294",
     amount: 1340,
   };
 
   const handlePlaceOrder = () => {
-    // Here you would call your Django API to save the order
-    // e.g., Order.objects.create(user=user, payment_method=method, total=1340)
+
     setIsOrdered(true);
   };
 
@@ -35,16 +34,15 @@ const Checkout = () => {
   return (
     <Container>
       <Header>
-        <button className="back-btn"><ArrowLeft size={20} /> Back to Cart</button>
+        <button className="back-btn"><ArrowLeft size={20} onClick={()=>navigate(-1)}/> Back</button>
         <h2>Select Payment Method</h2>
         <p>Total Amount: <strong>Rs. {orderDetails.amount}</strong></p>
       </Header>
 
       <MainGrid>
-        {/* LEFT: Payment Methods */}
         <MethodsSection>
           <MethodCard 
-            active={method === 'esewa'} 
+            $active={method === 'esewa'} 
             onClick={() => setMethod('esewa')}
           >
             <div className="icon-box"><Wallet size={24} /></div>
@@ -80,7 +78,7 @@ const Checkout = () => {
           </MethodCard>
         </MethodsSection>
 
-        {/* RIGHT: Dynamic Instructions */}
+        {/* RIGHT: Dynamic  */}
         <InstructionSection>
           {method === 'esewa' && (
             <DetailView>
@@ -125,7 +123,6 @@ const Checkout = () => {
   );
 };
 
-// --- STYLES ---
 
 const Container = styled.div` max-width: 1000px; margin: 0 auto; padding: 40px 20px; `;
 
