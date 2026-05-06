@@ -9,7 +9,7 @@ class OrderListCreateView(generics.ListCreateAPIView):
 
 
 class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset =  OrderItem.objects.all()
-    serializer_class = OrderItemSerializer
+    queryset =  Order.objects.all()
+    serializer_class = OrderSerializer
 
 

@@ -1,185 +1,276 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { 
-  Trash2, Smartphone, Wallet, CheckCircle, Clock, 
-  Truck, Plus, X, Mail, Phone, Package, Minus, Hash 
+  Smartphone, Wallet, MapPin, Plus, X, Mail, Phone, 
+  Package, Minus, AlertCircle, Check, Ban, Search, Inbox, RefreshCcw, History
 } from 'lucide-react';
 import useApi from '../../hooks/useApi';
 
 const OrdersReport = () => {
-  const { get, post} = useApi();
+  const { get, post, patch } = useApi();
 
   const [filter, setFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRequestDrawerOpen, setIsRequestDrawerOpen] = useState(false);
+  const [drawerTab, setDrawerTab] = useState('pending'); 
   const [orders, setOrders] = useState([]);
-
-  const productOptions = [
-    { id: 1, name: "Whole Milk", price: 120, unit: "Litre" },
-    { id: 2, name: "Skimmed Milk", price: 110, unit: "Litre" },
-    { id: 3, name: "Paneer", price: 450, unit: "500g" },
-    { id: 4, name: "Curd", price: 150, unit: "Litre" },
-    { id: 5, name: "Ghee", price: 800, unit: "500g" },
-  ];
+  const [acceptedOrders, setAcceptedOrders] = useState([]);
+  const [productOptions, setProductOptions] = useState([]);
+  const [orderInRequest, setOrderInRequest] = useState([]);
 
   const [newOrder, setNewOrder] = useState({
     full_name: "",
     email: "",
     contact_number: "",
-    items: [], 
+    location: "", 
     order_type: "Physical",
-    delivery_fee: 0
+    delivery_fee: 0,
+    admin_note: "",
+    items: [], 
   });
 
   useEffect(() => {
-    const fetchData = async () => {
-      const result = await get('order/listCreate/');
+    const fetchProducts = async () => {
+      const result = await get('product/listCreate/');
       if (result.success) {
-        setOrders(result.data);
+        setProductOptions(result.data);
       }
     };
-    fetchData();
+    if (isModalOpen) fetchProducts();
+  }, [isModalOpen, get]);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      const result = await get('order/listCreate/');
+      if (result.success) {     
+        setOrders(result.data);   
+        const accepted = result.data.filter(order => order.order_status === "accepted");
+        const pendingOrRejected = result.data.filter(order => order.order_status !== "accepted");
+        setAcceptedOrders(accepted); 
+        setOrderInRequest(pendingOrRejected);
+      }
+    };
+    fetchOrders();
   }, [get]);
 
-  const calculateTotal = () => {
-    const itemsTotal = newOrder.items.reduce((sum, item) => sum + (item.price_at_purchase * item.quantity), 0);
-    return itemsTotal + Number(newOrder.delivery_fee);
+  const handleCreateOrder = async (e) => {
+    e.preventDefault();
+    const payload = { ...newOrder, total_amount: finalTotal };
+    const result = await post('order/listCreate/', payload);
+    if (result.success) {
+      const refresh = await get('order/listCreate/');
+      if (refresh.success) {
+        setOrders(refresh.data);
+      }
+      setIsModalOpen(false);
+      resetForm();
+    }
+  };
+
+  const resetForm = () => {
+    setNewOrder({
+      full_name: "", email: "", contact_number: "", location: "",
+      order_type: "Physical", delivery_fee: 0, admin_note: "", items: [], 
+    });
   };
 
   const handleProductToggle = (product) => {
     const exists = newOrder.items.find(item => item.product === product.id);
-    
     if (exists) {
-      setNewOrder({
-        ...newOrder,
-        items: newOrder.items.filter(item => item.product !== product.id)
-      });
+      setNewOrder({ ...newOrder, items: newOrder.items.filter(item => item.product !== product.id) });
     } else {
-      setNewOrder({
-        ...newOrder,
-        items: [...newOrder.items, {
-          product: product.id,
-          product_name: product.name,
-          quantity: 1,
-          unit: product.unit,
-          price_at_purchase: product.price
-        }]
-      });
+      setNewOrder({ ...newOrder, items: [...newOrder.items, { product: product.id, product_name: product.product_name, quantity: 1, unit: product.unit, price_at_purchase: product.price }] });
     }
   };
 
   const updateQuantity = (productId, delta) => {
-    setNewOrder({
-      ...newOrder,
-      items: newOrder.items.map(item => 
-        item.product === productId 
-          ? { ...item, quantity: Math.max(1, item.quantity + delta) } 
-          : item
-      )
-    });
+    setNewOrder({ ...newOrder, items: newOrder.items.map(item => item.product === productId ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item) });
   };
 
-  const handleCreateOrder = async (e) => {
-    e.preventDefault();
-    
-    const payload = {
-      ...newOrder,
-      total_amount: calculateTotal(),
-    };
-    const result = await post('/order/listCreate/',payload)
-    if(result.success)
-    {
-      console.log("Order Success")
+  const acceptOrder = async (orderId) => {
+    const result = await patch(`order/detail/${orderId}`, { order_status: "accepted" });
+    if (result.success) {
+      const refresh = await get('order/listCreate/');
+      if (refresh.success) {
+        setOrders(refresh.data);
+        setAcceptedOrders(refresh.data.filter(o => o.order_status === "accepted"));
+        setOrderInRequest(refresh.data.filter(o => o.order_status !== "accepted"));
+      }
+      setIsRequestDrawerOpen(false);
     }
-    console.log("Sending to Backend:", payload);
-    setOrders([{ ...payload,  delivery_status: 'pending' }, ...orders]);
-    setIsModalOpen(false);
-    resetForm();
   };
 
-  const resetForm = () => {
-    setNewOrder({ full_name: "",
-       email: "",
-        contact_number: "",
-         items: [],
-          order_type: "Physical",
-           delivery_fee: 0 });
+  const rejectRequest = async (orderId) => {
+    const result = await patch(`order/detail/${orderId}`, { order_status: "rejected" });
+    if (result.success) {
+      const refresh = await get('order/listCreate/');
+      if (refresh.success) {
+        setOrders(refresh.data);
+        setOrderInRequest(refresh.data.filter(o => o.order_status !== "accepted"));
+      }
+    }
   };
+
+  const resolveOrder = async (orderId) => {
+    const result = await patch(`order/detail/${orderId}`, { order_status: "resolved" });
+    if (result.success) {
+      const refresh = await get('order/listCreate/');
+      if (refresh.success) {
+        setOrders(refresh.data);
+        setOrderInRequest(refresh.data.filter(o => o.order_status !== "accepted"));
+      }
+    }
+  };
+
+  const itemsTotal = newOrder.items.reduce((sum, item) => sum + (item.price_at_purchase * item.quantity), 0);
+  const finalTotal = itemsTotal + Number(newOrder.delivery_fee);
+
+  const pendingRequestsCount = orderInRequest.filter(o => o.order_status === 'pending').length;
+  const filteredOrders = acceptedOrders.filter(o => {
+    if (filter === 'all') return true;
+    return o.order_type === filter;
+  });
+
+  const displayRequestOrders = orderInRequest.filter(o => 
+    drawerTab === 'pending' ? o.order_status === 'pending' : o.order_status === 'rejected'
+  );
 
   return (
-    <Container className="page-fade-in">
-      <TopHeader>
+    <Container>
+      <SectionHeader>
+        <div>
+          <h1>Order Management</h1>
+          <p>Monitor transactions and manage store deliveries.</p>
+        </div>
+        <ActionButtons>
+          <RequestBtn onClick={() => setIsRequestDrawerOpen(true)}>
+            <Inbox size={18} /> Order Requests
+            {pendingRequestsCount > 0 && <span className="count">{pendingRequestsCount}</span>}
+          </RequestBtn>
+          <CreateBtn onClick={() => setIsModalOpen(true)}>
+            <Plus size={18} /> New Order
+          </CreateBtn>
+        </ActionButtons>
+      </SectionHeader>
+
+      <ControlRow>
         <FilterBar>
-          <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All</button>
+          <button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>All Orders</button>
           <button className={filter === 'Physical' ? 'active' : ''} onClick={() => setFilter('Physical')}><Wallet size={14}/> Cash</button>
           <button className={filter === 'eSewa' ? 'active' : ''} onClick={() => setFilter('eSewa')}><Smartphone size={14}/> eSewa</button>
         </FilterBar>
-
-        <CreateBtn onClick={() => setIsModalOpen(true)}>
-          <Plus size={18} /> New Order
-        </CreateBtn>
-      </TopHeader>
+        <SearchBar><Search size={16} /><input type="text" placeholder="Search orders..." /></SearchBar>
+      </ControlRow>
 
       <OrderGrid>
-        {orders.filter(o => filter === 'all' || o.order_type === filter).map(order => (
+        {filteredOrders.map(order => (
           <OrderCard key={order.id}>
             <div className="card-header">
-              <span className="order-id">#{order.id}</span>
-              <span className={`status-badge ${order.delivery_status}`}>{order.delivery_status}</span>
+              <span className="order-id">ORD-{order.id}</span>
+              <StatusTag className={order.delivery_status}>{order.delivery_status}</StatusTag>
             </div>
-            
             <div className="order-info">
               <h4>{order.full_name}</h4>
-              <p className="contact-details"><Mail size={10}/> {order.email}</p>
-              <p className="contact-details"><Phone size={10}/> {order.contact_number}</p>
-              
+              <div className="details-list">
+                <p className="contact-details"><Mail size={12}/> {order.email}</p>
+                <p className="contact-details"><Phone size={12}/> {order.contact_number}</p>
+                <p className="contact-details"><MapPin size={12}/> {order.location || "Store Pickup"}</p>
+              </div>
               <ItemsPreview>
                 {order.items?.map((item, idx) => (
                   <div key={idx} className="item-row">
-                    <span>{item.quantity}x {item.product_name}</span>
+                    <span>{item.quantity}× {item.product_name}</span>
                     <span>Rs. {item.price_at_purchase * item.quantity}</span>
                   </div>
                 ))}
               </ItemsPreview>
-              
-              <div className="payment-tag">{order.order_type}</div>
             </div>
-
             <PriceSection>
-              <div className="total-label">Grand Total</div>
-              <div className="amount">Rs. {order.total_amount}</div>
+              <div className="payment-block"><span className="method-label">Payment</span><div className="payment-tag">{order.order_type}</div></div>
+              <div className="total-block"><span className="total-label">Grand Total</span><div className="amount">Rs. {order.total_amount}</div></div>
             </PriceSection>
           </OrderCard>
         ))}
       </OrderGrid>
 
+      {isRequestDrawerOpen && (
+        <DrawerOverlay onClick={() => setIsRequestDrawerOpen(false)}>
+          <DrawerContent onClick={(e) => e.stopPropagation()}>
+            <DrawerHeader>
+              <div>
+                <h2>Resolution Center</h2>
+                <p>Manage new requests and audit rejected orders</p>
+              </div>
+              <CloseButton onClick={() => setIsRequestDrawerOpen(false)}><X size={24}/></CloseButton>
+            </DrawerHeader>
+
+            <TabSwitcher>
+              <TabButton active={drawerTab === 'pending'} onClick={() => setDrawerTab('pending')}>
+                <Inbox size={16}/> Pending ({pendingRequestsCount})
+              </TabButton>
+              <TabButton active={drawerTab === 'rejected'} onClick={() => setDrawerTab('rejected')}>
+                <History size={16}/> Rejected Logs
+              </TabButton>
+            </TabSwitcher>
+
+            <RequestList>
+              {displayRequestOrders.length > 0 ? (
+                displayRequestOrders.map(order => (
+                  <RequestItem key={order.id} isRejected={order.order_status === 'rejected'}>
+                    <div className="req-head">
+                      <strong>{order.full_name}</strong>
+                      <span>#{order.id}</span>
+                    </div>
+                    <p className="req-sub">Contact: {order.contact_number}</p>
+                    <ItemsPreview>
+                      {order.items?.map((item, idx) => (
+                        <div key={idx} className="item-row">
+                          <span>{item.quantity}x {item.product_name}</span>
+                        </div>
+                      ))}
+                    </ItemsPreview>
+                    <div className="req-total">Total: Rs. {order.total_amount}</div>
+                    
+                    <RequestActions>
+                      {order.order_status === 'pending' ? (
+                        <>
+                          <button className="decline" onClick={() => rejectRequest(order.id)}><Ban size={14}/> Reject</button>
+                          <button className="accept" onClick={() => acceptOrder(order.id)}><Check size={14}/> Accept Order</button>
+                        </>
+                      ) : (
+                        <button className="resolve" onClick={() => resolveOrder(order.id)}>
+                          <RefreshCcw size={14}/> Mark as Resolved
+                        </button>
+                      )}
+                    </RequestActions>
+                  </RequestItem>
+                ))
+              ) : (
+                <EmptyRequests>
+                  <AlertCircle size={40} />
+                  <p>No items in {drawerTab} list</p>
+                </EmptyRequests>
+              )}
+            </RequestList>
+          </DrawerContent>
+        </DrawerOverlay>
+      )}
+
       {isModalOpen && (
         <ModalOverlay>
           <ModalCard>
             <ModalHeader>
-              <div>
-                <h3>Create New Order</h3>
-                <p>Add customer details and dairy items</p>
-              </div>
+              <div><h3>Create New Order</h3><p>Register a manual transaction</p></div>
               <button onClick={() => setIsModalOpen(false)}><X size={20}/></button>
             </ModalHeader>
             <form onSubmit={handleCreateOrder}>
               <FormBody>
-                <InputGroup>
-                  <label>Customer Name</label>
-                  <input type="text" required value={newOrder.full_name} onChange={(e)=>setNewOrder({...newOrder, full_name: e.target.value})} placeholder="Archana ..." />
-                </InputGroup>
-                
+                <InputGroup><label>Customer Name</label><input type="text" required value={newOrder.full_name} onChange={(e)=>setNewOrder({...newOrder, full_name: e.target.value})} /></InputGroup>
                 <Row>
-                   <InputGroup>
-                    <label>Email</label>
-                    <input type="email" required value={newOrder.email} onChange={(e)=>setNewOrder({...newOrder, email: e.target.value})} placeholder="archana@gces.edu.np" />
-                  </InputGroup>
-                  <InputGroup>
-                    <label>Contact</label>
-                    <input type="tel" required value={newOrder.contact_number} onChange={(e)=>setNewOrder({...newOrder, contact_number: e.target.value})} placeholder="98XXXXXXXX" />
-                  </InputGroup>
+                  <InputGroup><label>Email Address</label><input type="email" required value={newOrder.email} onChange={(e)=>setNewOrder({...newOrder, email: e.target.value})} /></InputGroup>
+                  <InputGroup><label>Contact Number</label><input type="tel" required value={newOrder.contact_number} onChange={(e)=>setNewOrder({...newOrder, contact_number: e.target.value})} /></InputGroup>
                 </Row>
-
+                <InputGroup><label>Delivery Address</label><textarea rows="2" required value={newOrder.location} onChange={(e)=>setNewOrder({...newOrder, location: e.target.value})} /></InputGroup>
                 <SectionLabel><Package size={14}/> Select Products</SectionLabel>
                 <ProductGrid>
                   {productOptions.map(p => {
@@ -187,8 +278,8 @@ const OrdersReport = () => {
                     return (
                       <ProductItem key={p.id} $selected={!!selectedItem}>
                         <div className="info" onClick={() => handleProductToggle(p)}>
-                          <span className="name">{p.name}</span>
-                          <span className="price">Rs.{p.price} / {p.unit}</span>
+                          <span className="name">{p.product_name}</span>
+                          <span className="price">Rs.{p.price}</span>
                         </div>
                         {selectedItem && (
                           <QtyControls>
@@ -201,33 +292,9 @@ const OrdersReport = () => {
                     );
                   })}
                 </ProductGrid>
-
-                <Row>
-                  <InputGroup>
-                    <label>Payment Method</label>
-                    <select value={newOrder.order_type} onChange={(e) => setNewOrder({...newOrder, order_type: e.target.value})}>
-                      <option value="Physical">Physical (Cash)</option>
-                      <option value="eSewa">eSewa</option>
-                    </select>
-                  </InputGroup>
-                  <InputGroup>
-                    <label>Delivery Fee (Rs)</label>
-                    <input type="number" value={newOrder.delivery_fee} onChange={(e) => setNewOrder({...newOrder, delivery_fee: e.target.value})} />
-                  </InputGroup>
-                </Row>
-
-                <PriceSummary>
-                  <div className="total-row">
-                    <span>Final Amount:</span>
-                    <strong>Rs. {calculateTotal()}</strong>
-                  </div>
-                </PriceSummary>
+                <PriceSummary><div className="total-row"><span>Grand Total:</span><strong>Rs. {finalTotal}</strong></div></PriceSummary>
               </FormBody>
-              <ModalFooter>
-                <button type="submit" className="submit-btn" disabled={newOrder.items.length === 0}>
-                  Confirm & Save Order
-                </button>
-              </ModalFooter>
+              <ModalFooter><button type="submit" className="submit-btn" disabled={newOrder.items.length === 0}>Place Order</button></ModalFooter>
             </form>
           </ModalCard>
         </ModalOverlay>
@@ -236,110 +303,101 @@ const OrdersReport = () => {
   );
 };
 
-// Styled Components
-const Container = styled.div` padding: 20px; `;
-const Row = styled.div` display: flex; gap: 15px; & > div { flex: 1; } `;
+// ... Previous styled components ...
 
-const TopHeader = styled.div`
-  display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;
+const TabSwitcher = styled.div`
+  display: flex;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 12px;
+  margin-bottom: 20px;
 `;
 
-const FilterBar = styled.div`
-  display: flex; background: #fff; padding: 5px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-  button { padding: 8px 20px; border: none; background: transparent; cursor: pointer; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 6px; color: #636e72;
-    &.active { background: #2d3436; color: white; }
-  }
+const TabButton = styled.button`
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  background: ${props => props.active ? 'white' : 'transparent'};
+  color: ${props => props.active ? '#0f172a' : '#64748b'};
+  box-shadow: ${props => props.active ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'};
+  transition: all 0.2s;
 `;
 
-const CreateBtn = styled.button`
-  background: #7DAACB; color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px;
+const RequestItem = styled.div`
+  border: 1px solid ${props => props.isRejected ? '#fee2e2' : '#e2e8f0'};
+  background: ${props => props.isRejected ? '#fffafb' : 'white'};
+  padding: 20px;
+  border-radius: 20px;
+  .req-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .req-sub { font-size: 0.85rem; color: #64748b; margin-bottom: 12px; }
+  .req-total { margin-top: 15px; font-weight: 800; text-align: right; font-size: 1.1rem; }
 `;
 
-const OrderGrid = styled.div` display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 25px; `;
-
-const OrderCard = styled.div`
-  background: white; border-radius: 20px; padding: 20px; border: 1px solid #f1f2f6; transition: transform 0.2s;
-  &:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
-  .card-header { display: flex; justify-content: space-between; margin-bottom: 15px; 
-    .order-id { font-weight: 800; color: #b2bec3; font-size: 0.8rem; }
-    .status-badge { font-size: 0.65rem; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; font-weight: 700;
-      &.pending { background: #fff4e6; color: #d9480f; }
-      &.success { background: #ebfbee; color: #2b8a3e; }
+const RequestActions = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 15px;
+  
+  button {
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    &.accept { background: #0f172a; color: white; }
+    &.decline { background: #f1f5f9; color: #ef4444; }
+    &.resolve {
+      grid-column: span 2;
+      background: #3b82f6;
+      color: white;
     }
   }
-  h4 { margin-bottom: 8px; color: #2d3436; }
-  .contact-details { font-size: 0.75rem; color: #636e72; display: flex; align-items: center; gap: 5px; margin: 2px 0; }
-  .payment-tag { margin-top: 15px; font-size: 0.7rem; font-weight: 800; color: #7DAACB; background: #f0f7fc; padding: 4px 10px; border-radius: 6px; display: inline-block; }
 `;
 
-const ItemsPreview = styled.div`
-  margin-top: 15px; padding-top: 15px; border-top: 1px dashed #eee;
-  .item-row { display: flex; justify-content: space-between; font-size: 0.8rem; color: #2d3436; margin-bottom: 4px; font-weight: 500; }
-`;
-
-const PriceSection = styled.div`
-  margin-top: 20px; display: flex; justify-content: space-between; align-items: flex-end;
-  .total-label { font-size: 0.7rem; font-weight: 700; color: #b2bec3; text-transform: uppercase; }
-  .amount { font-size: 1.3rem; font-weight: 900; color: #2d3436; }
-`;
-
-const ModalOverlay = styled.div`
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); backdrop-filter: blur(5px); z-index: 1000; display: flex; align-items: center; justify-content: center;
-`;
-
-const ModalCard = styled.div`
-  background: white; width: 550px; border-radius: 24px; padding: 30px; max-height: 90vh; overflow-y: auto;
-`;
-
-const ModalHeader = styled.div`
-  display: flex; justify-content: space-between; margin-bottom: 25px;
-  h3 { margin: 0; color: #2d3436; }
-  p { font-size: 0.8rem; color: #b2bec3; margin: 0; }
-  button { background: none; border: none; cursor: pointer; color: #b2bec3; }
-`;
-
-const FormBody = styled.div` display: flex; flex-direction: column; gap: 18px; `;
-
-const SectionLabel = styled.div` font-size: 0.85rem; font-weight: 800; color: #2d3436; margin-top: 10px; display: flex; align-items: center; gap: 8px; `;
-
-const InputGroup = styled.div`
-  label { font-size: 0.75rem; font-weight: 700; color: #636e72; margin-bottom: 6px; display: block; }
-  input, select { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #f1f2f6; outline: none; font-weight: 600;
-    &:focus { border-color: #7DAACB; }
-  }
-`;
-
-const ProductGrid = styled.div` display: grid; grid-template-columns: 1fr 1fr; gap: 10px; `;
-
-const ProductItem = styled.div`
-  display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: 12px; border: 2px solid ${props => props.$selected ? '#7DAACB' : '#f8f9fa'};
-  background: ${props => props.$selected ? '#f0f7fc' : '#fff'};
-  .info { cursor: pointer; flex: 1; 
-    .name { display: block; font-size: 0.85rem; font-weight: 700; }
-    .price { font-size: 0.7rem; color: #b2bec3; }
-  }
-`;
-
-const QtyControls = styled.div`
-  display: flex; align-items: center; gap: 8px; background: white; padding: 4px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-  button { border: none; background: #f1f2f6; border-radius: 4px; padding: 2px; cursor: pointer; display: flex; align-items: center; }
-  span { font-size: 0.8rem; font-weight: 800; min-width: 15px; text-align: center; }
-`;
-
-const PriceSummary = styled.div`
-  background: #2d3436; color: white; padding: 20px; border-radius: 16px; margin-top: 10px;
-  .total-row { display: flex; justify-content: space-between; align-items: center; 
-    span { font-size: 0.9rem; opacity: 0.8; }
-    strong { font-size: 1.4rem; }
-  }
-`;
-
-const ModalFooter = styled.div`
-  margin-top: 25px;
-  .submit-btn { width: 100%; padding: 16px; border-radius: 14px; border: none; background: #7DAACB; color: white; font-weight: 800; cursor: pointer; transition: 0.2s;
-    &:disabled { background: #b2bec3; cursor: not-allowed; }
-    &:hover:not(:disabled) { background: #6b98b9; }
-  }
-`;
+// Remaining original styles
+const Container = styled.div` padding: 30px; background: #f8fafc; min-height: 100vh; `;
+const SectionHeader = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; h1 { font-size: 1.8rem; color: #0f172a; margin: 0; } p { color: #64748b; margin-top: 4px; } `;
+const ActionButtons = styled.div` display: flex; gap: 15px; `;
+const CreateBtn = styled.button` background: #3b82f6; color: white; border: none; padding: 14px 28px; border-radius: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.2s; &:hover { background: #2563eb; transform: translateY(-2px); } `;
+const RequestBtn = styled.button` background: #fff; color: #0f172a; border: 1px solid #e2e8f0; padding: 14px 28px; border-radius: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; position: relative; transition: all 0.2s; &:hover { background: #f1f5f9; } .count { position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; font-size: 0.7rem; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 3px solid #f8fafc; } `;
+const ControlRow = styled.div` display: flex; justify-content: space-between; margin-bottom: 30px; gap: 20px; `;
+const FilterBar = styled.div` display: flex; background: #fff; padding: 6px; border-radius: 14px; border: 1px solid #e2e8f0; button { padding: 10px 20px; border: none; background: transparent; cursor: pointer; border-radius: 10px; font-weight: 600; color: #64748b; transition: all 0.2s; &.active { background: #0f172a; color: #fff; } } `;
+const SearchBar = styled.div` display: flex; align-items: center; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0 15px; flex: 1; max-width: 400px; input { border: none; outline: none; width: 100%; padding-left: 10px; height: 48px; } svg { color: #94a3b8; } `;
+const OrderGrid = styled.div` display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 24px; `;
+const OrderCard = styled.div` background: white; border-radius: 24px; padding: 24px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; .order-id { font-weight: 700; color: #94a3b8; font-size: 0.85rem; } } h4 { margin: 0 0 15px 0; font-size: 1.2rem; color: #0f172a; } .contact-details { font-size: 0.85rem; color: #475569; display: flex; align-items: center; gap: 8px; margin: 4px 0; } `;
+const StatusTag = styled.span` font-size: 0.7rem; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; font-weight: 800; &.pending { background: #fef3c7; color: #92400e; } &.success { background: #dcfce7; color: #166534; } &.cancelled { background: #fee2e2; color: #991b1b; } `;
+const ItemsPreview = styled.div` background: #f8fafc; padding: 12px; border-radius: 12px; margin-top: 15px; .item-row { display: flex; justify-content: space-between; font-size: 0.85rem; color: #1e293b; font-weight: 600; margin-bottom: 4px; } `;
+const PriceSection = styled.div` margin-top: 24px; display: flex; justify-content: space-between; border-top: 1px solid #f1f5f9; padding-top: 20px; .method-label, .total-label { font-size: 0.7rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 4px; } .payment-tag { font-size: 0.8rem; font-weight: 800; color: #3b82f6; } .amount { font-size: 1.4rem; font-weight: 900; } `;
+const DrawerOverlay = styled.div` position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 1100; display: flex; justify-content: flex-end; `;
+const DrawerContent = styled.div` width: 450px; height: 100%; background: white; padding: 40px; display: flex; flex-direction: column; animation: slideIn 0.3s ease-out; @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } } `;
+const DrawerHeader = styled.div` display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; h2 { margin: 0; font-size: 1.6rem; color: #0f172a; } p { color: #64748b; font-size: 0.9rem; margin: 5px 0 0 0; } `;
+const CloseButton = styled.button` background: #f1f5f9; border: none; cursor: pointer; border-radius: 12px; padding: 8px; color: #64748b; `;
+const RequestList = styled.div` flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; `;
+const EmptyRequests = styled.div` display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; color: #94a3b8; font-weight: 600; `;
+const ModalOverlay = styled.div` position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: center; justify-content: center; `;
+const ModalCard = styled.div` background: white; width: 600px; border-radius: 32px; padding: 40px; max-height: 85vh; overflow-y: auto; `;
+const ModalHeader = styled.div` display: flex; justify-content: space-between; margin-bottom: 30px; h3 { margin: 0; } button { background: #f1f5f9; border: none; border-radius: 12px; padding: 8px; } `;
+const FormBody = styled.div` display: flex; flex-direction: column; gap: 20px; `;
+const Row = styled.div` display: flex; gap: 20px; & > div { flex: 1; } `;
+const InputGroup = styled.div` label { font-size: 0.8rem; font-weight: 700; margin-bottom: 8px; display: block; } input, textarea, select { width: 100%; padding: 14px; border-radius: 14px; border: 1px solid #e2e8f0; } `;
+const SectionLabel = styled.div` font-size: 0.9rem; font-weight: 800; margin-top: 10px; display: flex; align-items: center; gap: 10px; `;
+const ProductGrid = styled.div` display: grid; grid-template-columns: 1fr 1fr; gap: 12px; `;
+const ProductItem = styled.div` display: flex; justify-content: space-between; align-items: center; padding: 14px; border-radius: 16px; border: 2px solid ${props => props.$selected ? '#3b82f6' : '#f1f5f9'}; .info { cursor: pointer; .name { display: block; font-weight: 700; } .price { font-size: 0.75rem; color: #64748b; } } `;
+const QtyControls = styled.div` display: flex; align-items: center; gap: 10px; button { border: none; background: #f8fafc; border-radius: 6px; padding: 4px; } span { font-weight: 800; } `;
+const PriceSummary = styled.div` background: #0f172a; color: white; padding: 24px; border-radius: 20px; .total-row { display: flex; justify-content: space-between; align-items: center; strong { font-size: 1.6rem; } } `;
+const ModalFooter = styled.div` margin-top: 30px; .submit-btn { width: 100%; padding: 18px; border-radius: 16px; border: none; background: #3b82f6; color: white; font-weight: 800; } `;
 
 export default OrdersReport;
