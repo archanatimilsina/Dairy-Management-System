@@ -1,14 +1,21 @@
 from rest_framework.views import APIView
 from .models import Product, Cart
-from rest_framework import generics
+from rest_framework import generics, pagination
 from .serializers import ProductSerializer, CartSerializer
+from rest_framework.pagination import PageNumberPagination
 
+
+class ProductPagination(PageNumberPagination):
+   page_size= 20
+   page_sixe_query_param = 'page_size'
+   max_page_size = '100'
+   
 
 
 class ProductListCreateView(generics.ListCreateAPIView):
    queryset= Product.objects.all()
    serializer_class = ProductSerializer
-
+   pagination_class = ProductPagination
 
 
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):

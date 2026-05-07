@@ -4,7 +4,7 @@ import Navbar from '../elementComponent/Navbar';
 import FooterSection from '../elementComponent/Footer';
 import useApi from '../../hooks/useApi';
 import { useNavigate } from 'react-router-dom';
-import { FiSearch, FiShoppingBag, FiCheckCircle } from 'react-icons/fi';
+import { FiSearch, FiShoppingBag, FiCheckCircle, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
 const ProductPage = () => {
   const { get, post } = useApi();
@@ -14,10 +14,18 @@ const ProductPage = () => {
   const [products, setProducts] = useState([]);
   const [cartItems, setCartItems] = useState([]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const PAGE_SIZE = 20;
+
   useEffect(() => {
     const fetchProducts = async () => {
-      const result = await get('product/listCreate/');
-      if (result.success) setProducts(result.data);
+      const result = await get(`product/listCreate/?page=${currentPage}`);
+      if (result.success) 
+      {
+        setProducts(result.data.results);
+        setTotalPages(Math.ceil(result.data.count / PAGE_SIZE));
+      }
     };
     const fetchCartItems = async () => {
       const result = await get('product/cart/listCreate/');
@@ -25,7 +33,7 @@ const ProductPage = () => {
     };
     fetchProducts();
     fetchCartItems();
-  }, [get]);
+  }, [get, currentPage]);
 
   const isProductInCart = (productId) => {
     return cartItems.some(item => item.product === productId);
@@ -44,7 +52,7 @@ const ProductPage = () => {
 
   const categories = ["All", "Milk", "Paneer", "Cheese", "Nauni", "Ghee", "Cake"];
 
-  const filteredProducts = products.filter(p => {
+  const filteredProducts = products?.filter(p => {
     const matchesCategory = activeFilter === "All" || p.category === activeFilter;
     const matchesSearch = p.product_name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
@@ -130,6 +138,28 @@ const ProductPage = () => {
               </ProductCard>
             ))}
           </ProductGrid>
+          
+          {totalPages > 1 && (
+            <PaginationWrapper>
+              <PageBtn 
+                disabled={currentPage === 1} 
+                onClick={() => setCurrentPage(p => p - 1)}
+              >
+                <FiChevronLeft /> Previous
+              </PageBtn>
+              
+              <PageIndicator>
+                Page <span>{currentPage}</span> of {totalPages}
+              </PageIndicator>
+
+              <PageBtn 
+                disabled={currentPage === totalPages} 
+                onClick={() => setCurrentPage(p => p + 1)}
+              >
+                Next <FiChevronRight />
+              </PageBtn>
+            </PaginationWrapper>
+          )}
         </ContentArea>
       </MainContainer>
       <FooterSection />
@@ -137,6 +167,7 @@ const ProductPage = () => {
   );
 };
 
+// --- STYLED COMPONENTS ---
 
 const PageWrapper = styled.div`
   background-color: #fcfdfe;
@@ -270,6 +301,46 @@ const ProductCard = styled.div`
     transform: translateY(-5px);
     box-shadow: 0 20px 40px rgba(0,0,0,0.08);
   }
+`;
+
+const PaginationWrapper = styled.div`
+  margin-top: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+`;
+
+const PageBtn = styled.button`
+  background: white;
+  border: 1px solid #dfe6e9;
+  padding: 10px 20px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+  color: #2d3436;
+
+  &:hover:not(:disabled) {
+    background: #7DAACB;
+    color: white;
+    border-color: #7DAACB;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+const PageIndicator = styled.div`
+  font-weight: 500;
+  color: #999;
+  span { color: #2d3436; font-weight: 800; }
 `;
 
 const ImageContainer = styled.div`

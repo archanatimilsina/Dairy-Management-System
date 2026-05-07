@@ -16,6 +16,7 @@ const Cart = () => {
     const fetchData = async () => {
       const result = await get('product/cart/listCreate/');
       if (result.success) {
+        console.log(result.data.results)
         const initialData = result.data.map(item => ({
           ...item,
           selected: true 

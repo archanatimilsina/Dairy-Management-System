@@ -57,6 +57,7 @@ const AdminPanel = () => {
         return <MailPage />
       case 'company_details':
         return <CompanyDetails />
+    
       
     }
 
