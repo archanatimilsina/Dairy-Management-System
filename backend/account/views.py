@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from .serializers import (
-   RegisterSerializer, UserSerializer
+   RegisterSerializer, UserSerializer, CompanyConfigurationSerializer
 )
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
@@ -16,7 +16,7 @@ from rest_framework import generics
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.core.mail import EmailMultiAlternatives
-
+from .models import CompanyConfiguration
 
 class RegisterView(APIView):
     def post(self, request):
@@ -149,3 +149,26 @@ class SendDirectMailView(APIView):
                      }
       success = send_custom_mail(subject,to_email,'generalEmailFormat.html',context)
 
+
+class CompanyConfigurationView(APIView):  
+    def get_object(self):
+        obj, created = CompanyConfiguration.objects.get_or_create(pk=1)
+        return obj
+
+    def get(self, request):
+        instance = self.get_object()
+        serializer = CompanyConfigurationSerializer(instance)
+        return Response({"success": True, "data": serializer.data})
+
+    def patch(self, request):
+        instance = self.get_object()
+        serializer = CompanyConfigurationSerializer(instance, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"success": True, "data": serializer.data})
+        
+        return Response({
+            "success": False, 
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)

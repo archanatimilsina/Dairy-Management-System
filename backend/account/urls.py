@@ -12,7 +12,8 @@ from .views import (
     PasswordResetView,
     PasswordResetConfirmView,
     UserListView,
-    SendDirectMailView
+    SendDirectMailView,
+    CompanyConfigurationView
 )
 urlpatterns = [
     path('api/token/',TokenObtainPairView.as_view(),name="token_obtain_pair"),
@@ -23,5 +24,7 @@ urlpatterns = [
     path('forgot-password/', PasswordResetView.as_view(), name='forgot_password'),
     path('reset-password-confirm/<str:uidb64>/<str:token>/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('user/listView/', UserListView.as_view(), name="userListView"),
-    path('sendMail/', SendDirectMailView.as_view(), name="SendMail")
+    path('sendMail/', SendDirectMailView.as_view(), name="SendMail"),
+    path('company-info/', CompanyConfigurationView.as_view(), name='company-info'),
+    path('company-info/update/', CompanyConfigurationView.as_view(), name='company-info-update'),
 ]

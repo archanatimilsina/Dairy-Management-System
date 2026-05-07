@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
-
+from .models import CompanyConfiguration
 class RegisterSerializer(serializers.ModelSerializer):
     contact = serializers.CharField(write_only= True)
     password = serializers.CharField(write_only=True,min_length=6)
@@ -37,3 +37,22 @@ class UserSerializer(serializers.ModelSerializer):
         class Meta:
             model = User
             fields = ('username', 'email', 'contact', 'first_name', 'last_name', 'user_type','status','date_joined')
+
+
+class CompanyConfigurationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CompanyConfiguration
+        fields = [
+            'company_name', 
+            'support_email', 
+            'contact_phone', 
+            'office_address', 
+            'system_sender_email', 
+            'system_password', 
+            'facebook_url', 
+            'instagram_url', 
+            'tiktok_url'
+        ]
+        extra_kwargs = {
+            'system_password': {'write_only': True}
+        }

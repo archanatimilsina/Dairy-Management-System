@@ -16,7 +16,9 @@ const OrdersReport = () => {
   const [orders, setOrders] = useState([]);
   const [acceptedOrders, setAcceptedOrders] = useState([]);
   const [productOptions, setProductOptions] = useState([]);
-  const [orderInRequest, setOrderInRequest] = useState([]);
+  const [pendingOrders, setPendingRequest] = useState([]);
+  const [rejectedOrders,setRejectedOrders] = useState([])
+
 
   const [newOrder, setNewOrder] = useState({
     full_name: "",
@@ -45,9 +47,11 @@ const OrdersReport = () => {
       if (result.success) {     
         setOrders(result.data);   
         const accepted = result.data.filter(order => order.order_status === "accepted");
-        const pendingOrRejected = result.data.filter(order => order.order_status !== "accepted");
+        const pendingOrders = result.data.filter(order => order.order_status === "pending");
+        const rejectedOrders = result.data.filter(order => order.order_status === "rejected");
         setAcceptedOrders(accepted); 
-        setOrderInRequest(pendingOrRejected);
+        setRejectedOrders(rejectedOrders)
+        setPendingRequest(pendingOrders);
       }
     };
     fetchOrders();
@@ -94,7 +98,7 @@ const OrdersReport = () => {
       if (refresh.success) {
         setOrders(refresh.data);
         setAcceptedOrders(refresh.data.filter(o => o.order_status === "accepted"));
-        setOrderInRequest(refresh.data.filter(o => o.order_status !== "accepted"));
+        setPendingRequest(refresh.data.filter(o => o.order_status !== "accepted"));
       }
       setIsRequestDrawerOpen(false);
     }
@@ -106,7 +110,7 @@ const OrdersReport = () => {
       const refresh = await get('order/listCreate/');
       if (refresh.success) {
         setOrders(refresh.data);
-        setOrderInRequest(refresh.data.filter(o => o.order_status !== "accepted"));
+        setPendingRequest(refresh.data.filter(o => o.order_status !== "accepted"));
       }
     }
   };
@@ -117,7 +121,7 @@ const OrdersReport = () => {
       const refresh = await get('order/listCreate/');
       if (refresh.success) {
         setOrders(refresh.data);
-        setOrderInRequest(refresh.data.filter(o => o.order_status !== "accepted"));
+        setPendingRequest(refresh.data.filter(o => o.order_status === "pending"));
       }
     }
   };
@@ -125,15 +129,15 @@ const OrdersReport = () => {
   const itemsTotal = newOrder.items.reduce((sum, item) => sum + (item.price_at_purchase * item.quantity), 0);
   const finalTotal = itemsTotal + Number(newOrder.delivery_fee);
 
-  const pendingRequestsCount = orderInRequest.filter(o => o.order_status === 'pending').length;
+  const pendingRequestsCount = pendingOrders.filter(o => o.order_status === 'pending').length;
   const filteredOrders = acceptedOrders.filter(o => {
     if (filter === 'all') return true;
     return o.order_type === filter;
   });
 
-  const displayRequestOrders = orderInRequest.filter(o => 
-    drawerTab === 'pending' ? o.order_status === 'pending' : o.order_status === 'rejected'
-  );
+  const displayRequestOrders = 
+    drawerTab === 'pending' ? pendingOrders : rejectedOrders
+  ;
 
   return (
     <Container>
@@ -205,10 +209,10 @@ const OrdersReport = () => {
             </DrawerHeader>
 
             <TabSwitcher>
-              <TabButton active={drawerTab === 'pending'} onClick={() => setDrawerTab('pending')}>
+              <TabButton $active={drawerTab === 'pending'} onClick={() => setDrawerTab('pending')}>
                 <Inbox size={16}/> Pending ({pendingRequestsCount})
               </TabButton>
-              <TabButton active={drawerTab === 'rejected'} onClick={() => setDrawerTab('rejected')}>
+              <TabButton $active={drawerTab === 'rejected'} onClick={() => setDrawerTab('rejected')}>
                 <History size={16}/> Rejected Logs
               </TabButton>
             </TabSwitcher>
@@ -303,7 +307,6 @@ const OrdersReport = () => {
   );
 };
 
-// ... Previous styled components ...
 
 const TabSwitcher = styled.div`
   display: flex;
@@ -367,7 +370,6 @@ const RequestActions = styled.div`
   }
 `;
 
-// Remaining original styles
 const Container = styled.div` padding: 30px; background: #f8fafc; min-height: 100vh; `;
 const SectionHeader = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; h1 { font-size: 1.8rem; color: #0f172a; margin: 0; } p { color: #64748b; margin-top: 4px; } `;
 const ActionButtons = styled.div` display: flex; gap: 15px; `;
