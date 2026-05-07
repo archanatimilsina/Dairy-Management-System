@@ -134,20 +134,58 @@ class UserListView(generics.ListAPIView):
    serializer_class = UserSerializer
 
    
-class SendDirectMailView(APIView):
-   def post(self, request):
-      to_email = request.data.get('to')
-      subject = request.data.get('subject')
-      message = request.data.get('message')
-      attachment = request.FILES.get('attachment')
+# class SendDirectMailView(APIView):
+#    def post(self, request):
+#       to_email = request.data.get('to')
+#       subject = request.data.get('subject')
+#       message = request.data.get('message')
+#       attachment = request.FILES.get('attachment')
 
-      context ={
-         'subject': subject,
-          'content': message,
-          'username': to_email.split('@')[0],
-          'attachment' : attachment
-                     }
-      success = send_custom_mail(subject,to_email,'generalEmailFormat.html',context)
+#       context ={
+#          'subject': subject,
+#           'content': message,
+#           'username': to_email.split('@')[0],
+#           'attachment' : attachment
+#                      }
+#       success = send_custom_mail(subject,to_email,'generalEmailFormat.html',context)
+
+
+class SendDirectMailView(APIView):
+    def post(self, request):
+        to_data = request.data.get('to')
+        subject = request.data.get('subject')
+        message = request.data.get('message')
+        attachment = request.FILES.get('attachment')
+        if isinstance(to_data, str):
+            recipient_list = [to_data]
+        else:
+            recipient_list = to_data or []
+
+        if not recipient_list:
+            return Response({"success": False, "error": "Recipient list is empty"}, status=400)
+
+        try:
+            for email in recipient_list:
+                context = {
+                    'subject': subject,
+                    'content': message,
+                    'username': email.split('@')[0],
+                    'attachment': attachment
+                }
+                send_custom_mail(
+                    subject, 
+                    email, 
+                    'generalEmailFormat.html', 
+                    context
+                )
+            return Response({
+                "success": True, 
+                "message": f"Successfully sent to {len(recipient_list)} recipient(s)."
+            })
+        except Exception as e:
+            return Response({"success": False, "error": str(e)}, status=500)
+
+
 
 
 class CompanyConfigurationView(APIView):  
