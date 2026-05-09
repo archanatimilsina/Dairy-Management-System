@@ -13,6 +13,7 @@ import Contact from './components/pageComponent/ContactUs';
 import Feedback from './components/pageComponent/Feedback';
 import ResetPasswordConfirm from './components/pageComponent/ResetPasswordConfirm';
 import NotFound from './components/pageComponent/NotFound';
+
 const ProtectedRoutes = () => {
   const access_token = localStorage.getItem("access_token");
   if (!access_token) {
