@@ -27,9 +27,6 @@ const Products = () => {
     picture_src: null
   });
 
-
-
-// const BACKEND_URL = "http://127.0.0.1:8000";
   const categories = ["All", "Milk", "Paneer", "Cheese", "Ghee", "Cake","Nauni"];
 
  
@@ -37,15 +34,12 @@ const Products = () => {
     const fetchInitialData = async () => {
       const result = await get("product/listCreate/");
       if (result.success) {
-        console.log(result.data)
         setProducts(result.data);
       }
     };
     fetchInitialData();
   }, [get]); 
 
-
-  
 
   const handleInputChange = (e) => {
     const { name, value, files } = e.target;
@@ -61,9 +55,6 @@ const Products = () => {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
-
-  
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -102,8 +93,6 @@ const Products = () => {
       setShowForm(false);
     }
   };
-
- 
   const filteredProducts = products.filter(p => {
     const name = p.product_name || p.name || ""; 
     const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
