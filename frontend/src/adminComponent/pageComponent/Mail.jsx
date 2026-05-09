@@ -46,11 +46,10 @@ const SendMailPage = () => {
 
     setIsSending(true);
     
-    // Extract just the email strings from the select objects
     const emails = selectedRecipients.map(option => option.value);
     
     const payload = {
-      to: emails, // Sending an array of emails to the backend
+      to: emails, 
       subject: formData.subject,
       message: formData.message
     };

@@ -13,7 +13,7 @@ const OrdersReport = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRequestDrawerOpen, setIsRequestDrawerOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState('pending'); 
-  const [orders, setOrders] = useState([]);
+  // const [orders, setOrders] = useState([]);
   const [acceptedOrders, setAcceptedOrders] = useState([]);
   const [productOptions, setProductOptions] = useState([]);
   const [pendingOrders, setPendingRequest] = useState([]);
@@ -35,7 +35,7 @@ const OrdersReport = () => {
     const fetchProducts = async () => {
       const result = await get('product/listCreate/');
       if (result.success) {
-        setProductOptions(result.data);
+        setProductOptions(result.data.results);
       }
     };
     if (isModalOpen) fetchProducts();
@@ -45,7 +45,7 @@ const OrdersReport = () => {
     const fetchOrders = async () => {
       const result = await get('order/listCreate/');
       if (result.success) {     
-        setOrders(result.data);   
+        // setOrders(result.data);   
         const accepted = result.data.filter(order => order.order_status === "accepted");
         const pendingOrders = result.data.filter(order => order.order_status === "pending");
         const rejectedOrders = result.data.filter(order => order.order_status === "rejected");
@@ -64,7 +64,13 @@ const OrdersReport = () => {
     if (result.success) {
       const refresh = await get('order/listCreate/');
       if (refresh.success) {
-        setOrders(refresh.data);
+        const accepted = result.data.filter(order => order.order_status === "accepted");
+        const pendingOrders = result.data.filter(order => order.order_status === "pending");
+        const rejectedOrders = result.data.filter(order => order.order_status === "rejected");
+        setAcceptedOrders(accepted); 
+        setRejectedOrders(rejectedOrders)
+        setPendingRequest(pendingOrders);
+
       }
       setIsModalOpen(false);
       resetForm();
@@ -96,7 +102,7 @@ const OrdersReport = () => {
     if (result.success) {
       const refresh = await get('order/listCreate/');
       if (refresh.success) {
-        setOrders(refresh.data);
+        // setOrders(refresh.data);
         setAcceptedOrders(refresh.data.filter(o => o.order_status === "accepted"));
         setPendingRequest(refresh.data.filter(o => o.order_status !== "accepted"));
       }
@@ -109,7 +115,7 @@ const OrdersReport = () => {
     if (result.success) {
       const refresh = await get('order/listCreate/');
       if (refresh.success) {
-        setOrders(refresh.data);
+        // setOrders(refresh.data);
         setPendingRequest(refresh.data.filter(o => o.order_status !== "accepted"));
       }
     }
@@ -120,7 +126,7 @@ const OrdersReport = () => {
     if (result.success) {
       const refresh = await get('order/listCreate/');
       if (refresh.success) {
-        setOrders(refresh.data);
+        // setOrders(refresh.data);
         setPendingRequest(refresh.data.filter(o => o.order_status === "pending"));
       }
     }

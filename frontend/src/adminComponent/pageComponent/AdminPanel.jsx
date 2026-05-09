@@ -8,6 +8,7 @@ import Contacts from './Contacts';
 import MailPage from './Mail';
 import Feedbacks from './Feedbacks';
 import CompanyDetails from './CompanyDetails';
+import Category from './Category';
 
 import { 
   LayoutDashboard, 
@@ -35,6 +36,7 @@ const AdminPanel = () => {
     { id: 'mail', label: 'Send Mail', icon: <Mail size={20} /> },
     { id: 'feedbacks', label: 'Feedbacks',icon:<MessageSquare size={20}/>},
     { id: 'company_details', label: 'Company Details',icon:<MessageSquare size={20}/>},
+    { id: 'category', label: 'Category',icon:<MessageSquare size={20}/>},
 
   ];
 
@@ -57,6 +59,9 @@ const AdminPanel = () => {
         return <MailPage />
       case 'company_details':
         return <CompanyDetails />
+      case 'category':
+        return <Category />
+      
     
       
     }

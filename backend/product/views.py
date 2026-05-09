@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
-from .models import Product, Cart
-from rest_framework import generics, pagination
-from .serializers import ProductSerializer, CartSerializer
+from .models import Product, Cart, Category
+from rest_framework import generics
+from .serializers import ProductSerializer, CartSerializer, CategorySerializer
 from rest_framework.pagination import PageNumberPagination
 
 
@@ -35,3 +35,10 @@ class CartDetailView(generics.RetrieveUpdateDestroyAPIView):
    serializer_class = CartSerializer
    
 
+class CategoryListCreateView(generics.ListCreateAPIView):
+   queryset = Category.objects.all()
+   serializer_class = CategorySerializer
+
+class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
+   queryset = Category.objects.all()
+   serializer_class = CategorySerializer

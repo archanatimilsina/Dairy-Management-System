@@ -3,29 +3,8 @@ import styled from 'styled-components';
 import { Edit2, Trash2, ExternalLink, X } from 'lucide-react';
 import useApi from '../../hooks/useApi';
 const ContactsPage = () => {
-  // const [contacts, setContacts] = useState([
-  //   { 
-  //     id: 1, 
-  //     name: "Suman Sharma", 
-  //     email: "suman@email.com", 
-  //     phone: "9841XXXXXX", 
-  //     subject: "Wholesale Inquiry", 
-  //     message: "Interested in 20L milk daily for my cafe.",
-  //     adminNote: "Follow up on Monday with price list.",
-  //     status: "New"
-  //   },
-  //   { 
-  //     id: 2, 
-  //     name: "Binita Thapa", 
-  //     email: "binita@email.com", 
-  //     phone: "9812XXXXXX", 
-  //     subject: "Delivery Delay", 
-  //     message: "The milk arrived at 8 AM instead of 7 AM today.",
-  //     adminNote: "Apology sent. Checking with driver Ram.",
-  //     status: "Resolved"
-  //   }
-  // ]);
-  const {get,patch} = useApi()
+
+  const {get,patch,del} = useApi()
   const [contacts, setContacts] = useState([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,27 +21,33 @@ const ContactsPage = () => {
 const result = await patch(`contact/detail/${editingContact.id}`,{ admin_note: tempNote })
 if(result.success)
 {
-  console.log("Admin Note kept")
+  setContacts(prev => prev.map(contact=> contact.id === editingContact.id? {...contact, admin_note: tempNote}: contact));
+  console.log('Note updated successfully');
 }
     setIsModalOpen(false);
   };
 
 
 useEffect(()=>{
-  const fetchData = async ()=>{
+  const fetchContact = async ()=>{
     const result = await get('contact/listCreate/')
     if(result.success){
-      console.log(result.data)
       setContacts(result.data)
-
     }
   }
-  fetchData()
-
-
+  fetchContact()
 },[get])
 
+const deleteContact = async (contactId)=>
+{
+  const result = await del(`contact/detail/${contactId}`)
+  if(result.success)
+  {
+    console.log('Contact Deleted Successfully')
+    setContacts(prevContacts=>prevContacts.filter(contact=>contact.id !== contactId));
+  }
 
+}
 
 
   return (
@@ -103,8 +88,7 @@ useEffect(()=>{
               <td>
                 <ActionGroup>
                   <button className="edit" onClick={() => openEditModal(contact)}><Edit2 size={16} /></button>
-                  <button className="mail"><ExternalLink size={16} /></button>
-                  <button className="delete"><Trash2 size={16} /></button>
+                  <button className="delete"><Trash2 size={16} onClick={()=>deleteContact(contact.id)}/></button>
                 </ActionGroup>
               </td>
             </tr>

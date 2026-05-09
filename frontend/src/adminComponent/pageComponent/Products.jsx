@@ -15,8 +15,8 @@ const Products = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("All");
   const [imagePreview, setImagePreview] = useState(null);
-
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     category: "Milk",
@@ -27,16 +27,24 @@ const Products = () => {
     picture_src: null
   });
 
-  const categories = ["All", "Milk", "Paneer", "Cheese", "Ghee", "Cake","Nauni"];
+  // const categoriesFilter = ["All", "Milk", "Paneer", "Cheese", "Ghee", "Cake","Nauni"];
+
 
  
   useEffect(() => {
-    const fetchInitialData = async () => {
-      const result = await get("product/listCreate/");
-      if (result.success) {
-        setProducts(result.data);
+    const fetchInitialData = async ()=>
+    {
+      const category= await get('product/category/listCreate/')
+      const product = await get("product/listCreate/");
+      if(category.success && product.success)
+      {
+        setProducts(product.data.results);
+        setCategories(category.data)
+
       }
-    };
+
+    }
+   
     fetchInitialData();
   }, [get]); 
 
@@ -77,7 +85,7 @@ const Products = () => {
     const result = await post("product/listCreate/", data);
     
     if (result.success) {
-      setProducts(prev => [result.data, ...prev]);
+      setProducts(prev => [result.data.results, ...prev]);
       
       setFormData({
         name: "",
@@ -93,7 +101,8 @@ const Products = () => {
       setShowForm(false);
     }
   };
-  const filteredProducts = products.filter(p => {
+  console.log(products)
+  const filteredProducts = products?.filter(p => {
     const name = p.product_name || p.name || ""; 
     const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTab = activeTab === "All" || p.category === activeTab;
@@ -122,7 +131,7 @@ const Products = () => {
       </Header>
 
       <TabRow>
-        {categories.map(cat => (
+        {["All",...categories.map(cat=>cat.name)].map(cat => (
           <Tab key={cat} $active={activeTab === cat} onClick={() => setActiveTab(cat)}>{cat}</Tab>
         ))}
       </TabRow>
