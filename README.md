@@ -20,6 +20,8 @@ Elsa Dairy is a premium, end-to-end e-commerce and supply chain management ecosy
 cd frontend
 npm install
 npm run dev
+```
+
 
 ```bash
 cd backend
@@ -30,7 +32,7 @@ pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
 
-
+```
 
 # 🖼️ Project Gallery
 
