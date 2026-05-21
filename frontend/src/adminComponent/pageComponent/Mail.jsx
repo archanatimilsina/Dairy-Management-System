@@ -8,11 +8,7 @@ const SendMailPage = () => {
   const { get, post } = useApi();
   const [userOptions, setUserOptions] = useState([]);
   const [selectedRecipients, setSelectedRecipients] = useState([]);
-  const [formData, setFormData] = useState({
-    subject: "",
-    message: ""
-  });
-
+  const [formData, setFormData] = useState({ subject: "", message: "" });
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [isSending, setIsSending] = useState(false);
 
@@ -43,17 +39,9 @@ const SendMailPage = () => {
       alert("Please select or enter at least one recipient.");
       return;
     }
-
     setIsSending(true);
-    
     const emails = selectedRecipients.map(option => option.value);
-    
-    const payload = {
-      to: emails, 
-      subject: formData.subject,
-      message: formData.message
-    };
-
+    const payload = { to: emails, subject: formData.subject, message: formData.message };
     const result = await post('sendMail/', payload);
     
     if (result.success) {
@@ -67,49 +55,35 @@ const SendMailPage = () => {
   };
 
   return (
-    <div className="page-fade-in">
+    <Container>
       <ComposeWrapper>
         <div className="form-header">
           <h3>Broadcast Message</h3>
-          <p>Select multiple users from your database or type custom emails.</p>
+          <p>Compose and dispatch communications to selected users.</p>
         </div>
 
         <form onSubmit={handleSend}>
           <InputGroup>
-            <label><User size={16} /> To (Multiple):</label>
+            <label><User size={16} /> Recipients</label>
             <CreatableSelect
               isMulti
               isLoading={loadingUsers}
               options={userOptions}
               value={selectedRecipients}
               onChange={(newValue) => setSelectedRecipients(newValue)}
-              placeholder="Select users or type email and press Enter..."
-              formatCreateLabel={(inputValue) => `Add "${inputValue}"`}
+              placeholder="Search or type email..."
               styles={customSelectStyles}
             />
           </InputGroup>
 
           <InputGroup>
-            <label><Type size={16} /> Subject:</label>
-            <input 
-              type="text" 
-              name="subject"
-              value={formData.subject}
-              onChange={handleInputChange}
-              placeholder="e.g., Important Delivery Update" 
-              required 
-            />
+            <label><Type size={16} /> Subject</label>
+            <input name="subject" value={formData.subject} onChange={handleInputChange} required />
           </InputGroup>
 
           <TextAreaGroup>
-            <label><MessageSquare size={16} /> Message:</label>
-            <textarea 
-              name="message"
-              value={formData.message}
-              onChange={handleInputChange}
-              placeholder="Write your professional email content here..." 
-              required
-            />
+            <label><MessageSquare size={16} /> Message Content</label>
+            <textarea name="message" value={formData.message} onChange={handleInputChange} required />
           </TextAreaGroup>
 
           <ButtonGroup>
@@ -120,120 +94,29 @@ const SendMailPage = () => {
               {isSending ? (
                 <>Sending... <Loader2 size={18} className="spin" /></>
               ) : (
-                <>Send Email <Send size={18} /></>
+                <>Send Broadcast <Send size={18} /></>
               )}
             </button>
           </ButtonGroup>
         </form>
       </ComposeWrapper>
-    </div>
+    </Container>
   );
 };
 
-// --- CUSTOM STYLES FOR REACT-SELECT ---
 const customSelectStyles = {
   control: (base, state) => ({
-    ...base,
-    borderRadius: '12px',
-    padding: '6px',
-    border: state.isFocused ? '2px solid #7DAACB' : '2px solid #f1f2f6',
-    boxShadow: 'none',
-    '&:hover': { border: '2px solid #7DAACB' }
+    ...base, borderRadius: '12px', padding: '4px', borderColor: state.isFocused ? '#B8935A' : '#EAE3D6',
+    boxShadow: 'none', '&:hover': { borderColor: '#B8935A' }
   }),
-  multiValue: (base) => ({
-    ...base,
-    background: '#f1f2f6',
-    borderRadius: '8px',
-    padding: '2px 8px',
-  }),
-  multiValueLabel: (base) => ({
-    ...base,
-    color: '#2d3436',
-    fontWeight: '600',
-    fontSize: '0.85rem'
-  }),
-  multiValueRemove: (base) => ({
-    ...base,
-    color: '#b2bec3',
-    '&:hover': { background: '#ff7675', color: 'white' }
-  })
+  multiValue: (base) => ({ ...base, background: '#F5F2EE', borderRadius: '8px' }),
+  multiValueLabel: (base) => ({ ...base, color: '#2A1F10', fontWeight: '600', fontSize: '0.85rem' })
 };
 
-// --- STYLED COMPONENTS ---
-const ComposeWrapper = styled.div`
-  max-width: 800px;
-  background: white;
-  border-radius: 24px;
-  padding: 40px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.03);
-  .form-header {
-    margin-bottom: 30px;
-    h3 { color: #2d3436; font-size: 1.5rem; margin-bottom: 5px; }
-    p { color: #b2bec3; font-size: 0.9rem; }
-  }
-`;
-
-const InputGroup = styled.div`
-  margin-bottom: 20px;
-  label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: #2d3436;
-    margin-bottom: 8px;
-  }
-  input {
-    width: 100%;
-    padding: 14px 18px;
-    border-radius: 12px;
-    border: 2px solid #f1f2f6;
-    outline: none;
-    transition: 0.3s;
-    font-size: 1rem;
-    &:focus { border-color: #7DAACB; background: #fff; }
-  }
-`;
-
-const TextAreaGroup = styled.div`
-  margin-bottom: 25px;
-  label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: #2d3436;
-    margin-bottom: 8px;
-  }
-  textarea {
-    width: 100%;
-    height: 250px;
-    padding: 18px;
-    border-radius: 12px;
-    border: 2px solid #f1f2f6;
-    outline: none;
-    resize: vertical;
-    font-family: inherit;
-    font-size: 1rem;
-    line-height: 1.6;
-    &:focus { border-color: #7DAACB; }
-  }
-`;
-
-const ButtonGroup = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  .attachment-btn { background: none; border: none; color: #636e72; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; }
-  .send-btn {
-    background: #2d3436; color: white; padding: 14px 30px; border-radius: 14px; border: none; font-weight: 700; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: 0.3s;
-    &:hover { background: #7DAACB; transform: translateY(-2px); }
-    &:disabled { background: #b2bec3; cursor: not-allowed; }
-    .spin { animation: spin 1s linear infinite; }
-    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-  }
-`;
+const Container = styled.div` max-width: 800px; margin: 0 auto; `;
+const ComposeWrapper = styled.div` background: white; border-radius: 20px; padding: 40px; border: 1px solid #EAE3D6; box-shadow: 0 4px 15px rgba(42,31,16,0.05); .form-header { margin-bottom: 30px; h3 { color: #2A1F10; font-size: 1.5rem; } p { color: #8A7B6D; font-size: 0.9rem; } } `;
+const InputGroup = styled.div` margin-bottom: 20px; label { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 700; color: #2A1F10; margin-bottom: 8px; } input { width: 100%; padding: 12px 16px; border-radius: 12px; border: 1px solid #EAE3D6; outline: none; &:focus { border-color: #B8935A; } } `;
+const TextAreaGroup = styled.div` margin-bottom: 25px; label { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 700; color: #2A1F10; margin-bottom: 8px; } textarea { width: 100%; height: 200px; padding: 16px; border-radius: 12px; border: 1px solid #EAE3D6; outline: none; resize: vertical; &:focus { border-color: #B8935A; } } `;
+const ButtonGroup = styled.div` display: flex; justify-content: space-between; align-items: center; .attachment-btn { background: none; border: none; color: #8A7B6D; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; } .send-btn { background: #2A1F10; color: white; padding: 12px 24px; border-radius: 12px; border: none; font-weight: 700; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: 0.3s; &:hover { background: #B8935A; } &:disabled { opacity: 0.6; } .spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } } } `;
 
 export default SendMailPage;

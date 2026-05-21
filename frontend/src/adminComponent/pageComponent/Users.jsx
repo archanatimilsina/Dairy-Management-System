@@ -158,10 +158,13 @@ fetchData();
   );
 };
 
-// --- STYLED COMPONENTS ---
+
 
 const Container = styled.div`
-  padding: 10px;
+  padding: 30px;
+  background: #F5F2EE;
+  min-height: 100vh;
+  font-family: 'DM Sans', sans-serif;
 `;
 
 const HeaderSection = styled.div`
@@ -169,12 +172,12 @@ const HeaderSection = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
-  h2 { margin: 0; color: #2d3436; font-size: 1.8rem; }
-  p { margin: 5px 0 0; color: #b2bec3; font-size: 0.95rem; }
+  h2 { margin: 0; color: #2A1F10; font-size: 1.8rem; }
+  p { margin: 5px 0 0; color: #8A7B6D; font-size: 0.95rem; }
 `;
 
 const AddUserBtn = styled.button`
-  background: #2d3436;
+  background: #2A1F10;
   color: white;
   border: none;
   padding: 12px 24px;
@@ -185,7 +188,7 @@ const AddUserBtn = styled.button`
   gap: 10px;
   cursor: pointer;
   transition: 0.3s;
-  &:hover { background: #7DAACB; }
+  &:hover { background: #B8935A; }
 `;
 
 const StatsRow = styled.div`
@@ -202,16 +205,16 @@ const StatCard = styled.div`
   align-items: center;
   gap: 15px;
   flex: 1;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+  border: 1px solid #EAE3D6;
   .icon {
     padding: 12px;
     border-radius: 12px;
-    &.active { background: #f0f7fc; color: #7DAACB; }
-    &.regular { background: #fdf2f2; color: #e74c3c; }
+    &.active { background: #F5F2EE; color: #B8935A; }
+    &.regular { background: #F5F2EE; color: #2A1F10; }
   }
   .data {
-    span { font-size: 0.8rem; color: #b2bec3; font-weight: 600; }
-    h3 { margin: 0; color: #2d3436; font-size: 1.4rem; }
+    span { font-size: 0.8rem; color: #8A7B6D; font-weight: 600; }
+    h3 { margin: 0; color: #2A1F10; font-size: 1.4rem; }
   }
 `;
 
@@ -230,14 +233,14 @@ const SearchWrapper = styled.div`
   border-radius: 12px;
   gap: 10px;
   width: 350px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
-  color: #b2bec3;
-  input { border: none; outline: none; width: 100%; font-size: 0.9rem; }
+  border: 1px solid #EAE3D6;
+  color: #8A7B6D;
+  input { border: none; outline: none; width: 100%; font-size: 0.9rem; color: #2A1F10; }
 `;
 
 const ButtonGroup = styled.div`
   display: flex;
-  background: #f1f2f6;
+  background: #EAE3D6;
   padding: 4px;
   border-radius: 10px;
 `;
@@ -250,8 +253,7 @@ const FilterBtn = styled.button`
   font-weight: 700;
   cursor: pointer;
   background: ${props => props.$active ? 'white' : 'transparent'};
-  color: ${props => props.$active ? '#2d3436' : '#b2bec3'};
-  box-shadow: ${props => props.$active ? '0 2px 8px rgba(0,0,0,0.05)' : 'none'};
+  color: ${props => props.$active ? '#2A1F10' : '#8A7B6D'};
   transition: 0.2s;
 `;
 
@@ -259,7 +261,7 @@ const TableContainer = styled.div`
   background: white;
   border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+  border: 1px solid #EAE3D6;
 `;
 
 const UserTable = styled.table`
@@ -268,13 +270,13 @@ const UserTable = styled.table`
   th {
     text-align: left;
     padding: 18px 24px;
-    background: #fcfcfd;
-    color: #b2bec3;
+    background: #F5F2EE;
+    color: #2A1F10;
     font-size: 0.75rem;
     text-transform: uppercase;
-    border-bottom: 1px solid #f1f2f6;
+    font-weight: 800;
   }
-  td { padding: 18px 24px; border-bottom: 1px solid #f8f9fa; font-size: 0.9rem; }
+  td { padding: 18px 24px; border-bottom: 1px solid #F5F2EE; font-size: 0.9rem; }
 `;
 
 const UserCell = styled.div`
@@ -282,26 +284,27 @@ const UserCell = styled.div`
   align-items: center;
   gap: 12px;
   .avatar {
-    width: 35px; height: 35px; background: #7DAACB; color: white;
+    width: 35px; height: 35px; background: #2A1F10; color: #B8935A;
     border-radius: 10px; display: flex; align-items: center; justify-content: center;
     font-weight: 800; font-size: 0.8rem;
   }
+  strong { color: #2A1F10; }
 `;
 
 const ContactCell = styled.div`
   display: flex;
   flex-direction: column;
   gap: 4px;
-  .item { display: flex; align-items: center; gap: 6px; color: #636e72; font-size: 0.8rem; }
+  .item { display: flex; align-items: center; gap: 6px; color: #8A7B6D; font-size: 0.8rem; }
 `;
 
 const TypeTag = styled.span`
   padding: 4px 10px;
-  border-radius: 8px;
+  border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 700;
-  background: ${props => props.$type === 'Regular' ? '#f0f7fc' : '#f1f2f6'};
-  color: ${props => props.$type === 'Regular' ? '#7DAACB' : '#636e72'};
+  background: #F5F2EE;
+  color: #2A1F10;
 `;
 
 const StatusBadge = styled.span`
@@ -310,17 +313,17 @@ const StatusBadge = styled.span`
   font-weight: 800;
   padding: 4px 10px;
   border-radius: 20px;
-  background: ${props => props.$status === 'active' ? '#d1f2eb' : '#ffd7d7'};
-  color: ${props => props.$status === 'active' ? '#1abc9c' : '#e74c3c'};
+  background: ${props => props.$status === 'active' ? '#D1FAE5' : '#FEE2E2'};
+  color: ${props => props.$status === 'active' ? '#065F46' : '#991B1B'};
 `;
 
 const IconButton = styled.button`
-  background: none; border: none; color: #b2bec3; cursor: pointer;
-  &:hover { color: #2d3436; }
+  background: none; border: none; color: #8A7B6D; cursor: pointer;
+  &:hover { color: #2A1F10; }
 `;
 
 const EmptyState = styled.div`
-  padding: 60px; text-align: center; color: #b2bec3; font-style: italic;
+  padding: 60px; text-align: center; color: #8A7B6D; font-style: italic;
 `;
 
 export default UsersReport;

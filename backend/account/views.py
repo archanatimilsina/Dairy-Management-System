@@ -5,6 +5,11 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
+from order.serializers import OrderSerializer
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from order.models import Order
 from .serializers import (
    RegisterSerializer, UserSerializer, CompanyConfigurationSerializer
 )
@@ -33,9 +38,6 @@ class RegisterView(APIView):
        else:
           print(serializer.errors)
           return Response(data= serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-
-
-
 
 class LoginView(APIView):
     def post(self, request):
@@ -132,6 +134,13 @@ class PasswordResetConfirmView(APIView):
 class UserListView(generics.ListAPIView):
    queryset = User.objects.all()
    serializer_class = UserSerializer
+   
+
+
+class UserDetailByUsernameView(generics.RetrieveAPIView):
+    serializer_class = UserSerializer
+    lookup_field = 'username'
+    queryset = User.objects.all()
 
    
 # class SendDirectMailView(APIView):
@@ -210,3 +219,19 @@ class CompanyConfigurationView(APIView):
             "success": False, 
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+
+class UserOrderHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user_email = request.user.email
+        queryset = Order.objects.filter(email=user_email)
+        
+        serializer = OrderSerializer(queryset, many=True)
+        return Response({
+            "success": True,
+            "data": serializer.data
+        })

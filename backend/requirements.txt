@@ -3,3 +3,7 @@ djangorestframework==3.17.1
 django-cors-headers==4.9.0
 pillow==12.2.0
 
+python-dotenv
+djangorestframework-simplejwt
+echo python-dotenv
+djangorestframework-simplejwt

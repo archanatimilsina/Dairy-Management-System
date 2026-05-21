@@ -13,12 +13,10 @@ const OrdersReport = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRequestDrawerOpen, setIsRequestDrawerOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState('pending'); 
-  // const [orders, setOrders] = useState([]);
   const [acceptedOrders, setAcceptedOrders] = useState([]);
   const [productOptions, setProductOptions] = useState([]);
   const [pendingOrders, setPendingRequest] = useState([]);
-  const [rejectedOrders,setRejectedOrders] = useState([])
-
+  const [rejectedOrders, setRejectedOrders] = useState([]);
 
   const [newOrder, setNewOrder] = useState({
     full_name: "",
@@ -45,13 +43,12 @@ const OrdersReport = () => {
     const fetchOrders = async () => {
       const result = await get('order/listCreate/');
       if (result.success) {     
-        // setOrders(result.data);   
         const accepted = result.data.filter(order => order.order_status === "accepted");
-        const pendingOrders = result.data.filter(order => order.order_status === "pending");
-        const rejectedOrders = result.data.filter(order => order.order_status === "rejected");
+        const pending = result.data.filter(order => order.order_status === "pending");
+        const rejected = result.data.filter(order => order.order_status === "rejected");
         setAcceptedOrders(accepted); 
-        setRejectedOrders(rejectedOrders)
-        setPendingRequest(pendingOrders);
+        setRejectedOrders(rejected);
+        setPendingRequest(pending);
       }
     };
     fetchOrders();
@@ -64,13 +61,9 @@ const OrdersReport = () => {
     if (result.success) {
       const refresh = await get('order/listCreate/');
       if (refresh.success) {
-        const accepted = result.data.filter(order => order.order_status === "accepted");
-        const pendingOrders = result.data.filter(order => order.order_status === "pending");
-        const rejectedOrders = result.data.filter(order => order.order_status === "rejected");
-        setAcceptedOrders(accepted); 
-        setRejectedOrders(rejectedOrders)
-        setPendingRequest(pendingOrders);
-
+        setAcceptedOrders(refresh.data.filter(order => order.order_status === "accepted"));
+        setPendingRequest(refresh.data.filter(order => order.order_status === "pending"));
+        setRejectedOrders(refresh.data.filter(order => order.order_status === "rejected"));
       }
       setIsModalOpen(false);
       resetForm();
@@ -102,9 +95,9 @@ const OrdersReport = () => {
     if (result.success) {
       const refresh = await get('order/listCreate/');
       if (refresh.success) {
-        // setOrders(refresh.data);
         setAcceptedOrders(refresh.data.filter(o => o.order_status === "accepted"));
-        setPendingRequest(refresh.data.filter(o => o.order_status !== "accepted"));
+        setPendingRequest(refresh.data.filter(o => o.order_status === "pending"));
+        setRejectedOrders(refresh.data.filter(o => o.order_status === "rejected"));
       }
       setIsRequestDrawerOpen(false);
     }
@@ -115,8 +108,9 @@ const OrdersReport = () => {
     if (result.success) {
       const refresh = await get('order/listCreate/');
       if (refresh.success) {
-        // setOrders(refresh.data);
-        setPendingRequest(refresh.data.filter(o => o.order_status !== "accepted"));
+        setAcceptedOrders(refresh.data.filter(o => o.order_status === "accepted"));
+        setPendingRequest(refresh.data.filter(o => o.order_status === "pending"));
+        setRejectedOrders(refresh.data.filter(o => o.order_status === "rejected"));
       }
     }
   };
@@ -126,8 +120,9 @@ const OrdersReport = () => {
     if (result.success) {
       const refresh = await get('order/listCreate/');
       if (refresh.success) {
-        // setOrders(refresh.data);
+        setAcceptedOrders(refresh.data.filter(o => o.order_status === "accepted"));
         setPendingRequest(refresh.data.filter(o => o.order_status === "pending"));
+        setRejectedOrders(refresh.data.filter(o => o.order_status === "rejected"));
       }
     }
   };
@@ -141,9 +136,7 @@ const OrdersReport = () => {
     return o.order_type === filter;
   });
 
-  const displayRequestOrders = 
-    drawerTab === 'pending' ? pendingOrders : rejectedOrders
-  ;
+  const displayRequestOrders = drawerTab === 'pending' ? pendingOrders : rejectedOrders;
 
   return (
     <Container>
@@ -334,9 +327,9 @@ const TabButton = styled.button`
   justify-content: center;
   gap: 8px;
   font-size: 0.85rem;
-  background: ${props => props.active ? 'white' : 'transparent'};
-  color: ${props => props.active ? '#0f172a' : '#64748b'};
-  box-shadow: ${props => props.active ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'};
+  background: ${props => props.$active ? 'white' : 'transparent'};
+  color: ${props => props.$active ? '#0f172a' : '#64748b'};
+  box-shadow: ${props => props.$active ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'};
   transition: all 0.2s;
 `;
 
@@ -379,7 +372,7 @@ const RequestActions = styled.div`
 const Container = styled.div` padding: 30px; background: #f8fafc; min-height: 100vh; `;
 const SectionHeader = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; h1 { font-size: 1.8rem; color: #0f172a; margin: 0; } p { color: #64748b; margin-top: 4px; } `;
 const ActionButtons = styled.div` display: flex; gap: 15px; `;
-const CreateBtn = styled.button` background: #3b82f6; color: white; border: none; padding: 14px 28px; border-radius: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.2s; &:hover { background: #2563eb; transform: translateY(-2px); } `;
+const CreateBtn = styled.button` background: rgba(42, 31, 16, 0.5); color: white; border: none; padding: 14px 28px; border-radius: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.2s; &:hover { background: rgba(42, 31, 16, 0.5); transform: translateY(-2px); } `;
 const RequestBtn = styled.button` background: #fff; color: #0f172a; border: 1px solid #e2e8f0; padding: 14px 28px; border-radius: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; position: relative; transition: all 0.2s; &:hover { background: #f1f5f9; } .count { position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; font-size: 0.7rem; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 3px solid #f8fafc; } `;
 const ControlRow = styled.div` display: flex; justify-content: space-between; margin-bottom: 30px; gap: 20px; `;
 const FilterBar = styled.div` display: flex; background: #fff; padding: 6px; border-radius: 14px; border: 1px solid #e2e8f0; button { padding: 10px 20px; border: none; background: transparent; cursor: pointer; border-radius: 10px; font-weight: 600; color: #64748b; transition: all 0.2s; &.active { background: #0f172a; color: #fff; } } `;
@@ -403,9 +396,9 @@ const Row = styled.div` display: flex; gap: 20px; & > div { flex: 1; } `;
 const InputGroup = styled.div` label { font-size: 0.8rem; font-weight: 700; margin-bottom: 8px; display: block; } input, textarea, select { width: 100%; padding: 14px; border-radius: 14px; border: 1px solid #e2e8f0; } `;
 const SectionLabel = styled.div` font-size: 0.9rem; font-weight: 800; margin-top: 10px; display: flex; align-items: center; gap: 10px; `;
 const ProductGrid = styled.div` display: grid; grid-template-columns: 1fr 1fr; gap: 12px; `;
-const ProductItem = styled.div` display: flex; justify-content: space-between; align-items: center; padding: 14px; border-radius: 16px; border: 2px solid ${props => props.$selected ? '#3b82f6' : '#f1f5f9'}; .info { cursor: pointer; .name { display: block; font-weight: 700; } .price { font-size: 0.75rem; color: #64748b; } } `;
+const ProductItem = styled.div` display: flex; justify-content: space-between; align-items: center; padding: 14px; border-radius: 16px; border: 2px solid ${props => props.$selected ? 'rgba(42, 31, 16, 0.5)' : '#f1f5f9'}; .info { cursor: pointer; .name { display: block; font-weight: 700; } .price { font-size: 0.75rem; color: #64748b; } } `;
 const QtyControls = styled.div` display: flex; align-items: center; gap: 10px; button { border: none; background: #f8fafc; border-radius: 6px; padding: 4px; } span { font-weight: 800; } `;
-const PriceSummary = styled.div` background: #0f172a; color: white; padding: 24px; border-radius: 20px; .total-row { display: flex; justify-content: space-between; align-items: center; strong { font-size: 1.6rem; } } `;
-const ModalFooter = styled.div` margin-top: 30px; .submit-btn { width: 100%; padding: 18px; border-radius: 16px; border: none; background: #3b82f6; color: white; font-weight: 800; } `;
+const PriceSummary = styled.div` background: rgba(42, 31, 16, 0.5); color: white; padding: 24px; border-radius: 20px; .total-row { display: flex; justify-content: space-between; align-items: center; strong { font-size: 1.6rem; } } `;
+const ModalFooter = styled.div` margin-top: 30px; .submit-btn { width: 100%; padding: 18px; border-radius: 16px; border: none; background: rgba(42, 31, 16, 0.5); color: white; font-weight: 800; } `;
 
 export default OrdersReport;

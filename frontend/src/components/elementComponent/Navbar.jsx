@@ -5,7 +5,6 @@ import { useLogout } from '../../hooks/useLogout';
 import { ChevronDown, User, LogOut, LayoutDashboard } from 'lucide-react';
 import logo from '../../../public/logo.png';
 
-// --- ANIMATIONS ---
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -29,8 +28,8 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Note: Backend logic remains untouched as requested
-  const user = { name: "Archana", isLoggedIn: true };
+  const user = { name: localStorage.getItem("username")
+    , isLoggedIn: localStorage.getItem("IsLoggedIn") };
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -78,7 +77,6 @@ const Navbar = () => {
               {showDropdown && (
                 <DropdownMenu>
                   <div className="user-info-header">
-                    <p className="user-label">Premium Member</p>
                     <p className="user-name">{user.name}</p>
                   </div>
                   <hr />
@@ -103,7 +101,6 @@ const Navbar = () => {
   );
 };
 
-// --- STYLED COMPONENTS ---
 
 const NavContainer = styled.nav`
   display: flex;
@@ -190,6 +187,7 @@ const UserProfile = styled.div`
   background: #fff;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
+
   &:hover { 
     background: #FAF7F2; 
     border-color: #C5A059;
@@ -265,7 +263,6 @@ const DropdownMenu = styled.div`
     transition: all 0.2s ease;
     background: none;
     border: none;
-    width: 100%;
     text-align: left;
     cursor: pointer;
     font-weight: 500;
@@ -275,6 +272,7 @@ const DropdownMenu = styled.div`
     }
 
     &:hover {
+      
       background: #FAF7F2;
       color: #C5A059;
       svg { opacity: 1; }

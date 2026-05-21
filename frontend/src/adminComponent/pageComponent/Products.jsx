@@ -16,18 +16,17 @@ const Products = () => {
   const [activeTab, setActiveTab] = useState("All");
   const [imagePreview, setImagePreview] = useState(null);
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState(["All"]);
   const [formData, setFormData] = useState({
     name: "",
-    category: "Milk",
+    category: "",
     price: "",
-    unit: "Litre",
+    unit: "",
     stock: "",
     description: "",
     picture_src: null
   });
 
-  // const categoriesFilter = ["All", "Milk", "Paneer", "Cheese", "Ghee", "Cake","Nauni"];
 
 
  
@@ -40,7 +39,6 @@ const Products = () => {
       {
         setProducts(product.data.results);
         setCategories(category.data)
-
       }
 
     }
@@ -85,8 +83,7 @@ const Products = () => {
     const result = await post("product/listCreate/", data);
     
     if (result.success) {
-      setProducts(prev => [result.data.results, ...prev]);
-      
+setProducts(prev => [result.data, ...prev]);        
       setFormData({
         name: "",
         category: "Milk",
@@ -102,14 +99,13 @@ const Products = () => {
     }
   };
   console.log(products)
-  const filteredProducts = products?.filter(p => {
-    const name = p.product_name || p.name || ""; 
-    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesTab = activeTab === "All" || p.category === activeTab;
-    return matchesSearch && matchesTab;
-  });
 
 
+const filteredProducts = products.filter(p => {
+  const matchesSearch = p.category_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesTab = activeTab === "All" || p.category_name === activeTab.toLowerCase();
+  return matchesSearch && matchesTab;
+});
   return (
     <Container>
       <Header>
@@ -131,9 +127,9 @@ const Products = () => {
       </Header>
 
       <TabRow>
-        {["All",...categories.map(cat=>cat.name)].map(cat => (
-          <Tab key={cat} $active={activeTab === cat} onClick={() => setActiveTab(cat)}>{cat}</Tab>
-        ))}
+        {["All", ...categories.map(cat => cat.name)].map((cat, index) => (
+  <Tab key={index} $active={activeTab === cat} onClick={() => setActiveTab(cat)}>{cat}</Tab>
+))}
       </TabRow>
 
       <TableContainer>
@@ -159,7 +155,7 @@ const Products = () => {
                 <strong>{product.product_name}</strong>
                 <span>ID: #PROD-{product.id}</span>
               </div>
-              <div className="col-cat"><Tag>{product.category}</Tag></div>
+              <div className="col-cat"><Tag>{product.category_name}</Tag></div>
               <div className="col-price">Rs. {product.price} <small>/{product.unit}</small></div>
               <div className="col-stock">
                   <StockStatus $low={parseInt(product.stock) < 20}>
@@ -233,9 +229,13 @@ const Products = () => {
               <Row>
                 <InputGroup>
                   <label>Category</label>
-                  <select name="category" value={formData.category} onChange={handleInputChange}>
-                    {categories.filter(c => c !== "All").map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                 <select name="category" value={formData.category} onChange={handleInputChange}>
+  {categories.map(c => (
+    <option key={c.id} value={c.id}>
+      {c.name}
+    </option>
+  ))}
+</select>
                 </InputGroup>
                 <InputGroup>
                   <label>Price (NPR)</label>
@@ -268,48 +268,28 @@ const Products = () => {
   );
 };
 
-// Styled Components
-const Container = styled.div` padding: 20px; `;
-const Header = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; `;
-const ActionRow = styled.div` display: flex; gap: 15px; `;
-const SearchBox = styled.div` background: white; border-radius: 14px; display: flex; align-items: center; padding: 0 15px; border: 1px solid #f1f2f6; width: 300px; input { border: none; outline: none; height: 48px; width: 100%; } `;
-const AddBtn = styled.button` background: #2d3436; color: white; border: none; padding: 0 25px; border-radius: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; `;
-const TabRow = styled.div` display: flex; gap: 10px; margin-bottom: 30px; `;
-const Tab = styled.button` background: ${props => props.$active ? '#7DAACB' : 'transparent'}; color: ${props => props.$active ? 'white' : '#636e72'}; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; `;
-const TableContainer = styled.div` background: white; border-radius: 20px; border: 1px solid #f1f2f6; overflow: hidden; `;
-const TableHead = styled.div`
-  display: grid; grid-template-columns: 80px 2fr 1fr 1fr 1.5fr 120px;
-  padding: 20px; background: #f8fbff; border-bottom: 1px solid #f1f2f6;
-  font-size: 0.8rem; font-weight: 800; color: #b2bec3; text-transform: uppercase;
-`;
-const TableRow = styled.div`
-  display: grid; grid-template-columns: 80px 2fr 1fr 1fr 1.5fr 120px;
-  padding: 15px 20px; align-items: center; border-bottom: 1px solid #f8f9fa;
-  &:hover { background: #fdfdfe; }
-  .col-img img { width: 50px; height: 50px; border-radius: 12px; object-fit: cover; }
-  .col-main { display: flex; flex-direction: column; strong { color: #2d3436; } span { font-size: 0.75rem; color: #b2bec3; } }
-  .col-price { font-weight: 700; color: #2d3436; small { color: #b2bec3; } }
-`;
-const Tag = styled.span` background: #f0f7fc; color: #7DAACB; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; `;
-const StockStatus = styled.div` font-size: 0.85rem; font-weight: 600; color: ${props => props.$low ? '#e74c3c' : '#27ae60'}; `;
-const IconButton = styled.button` background: none; border: none; padding: 8px; color: #b2bec3; cursor: pointer; &:hover { color: #2d3436; } &.del:hover { color: #e74c3c; } `;
-const Overlay = styled.div` position: fixed; inset: 0; background: rgba(0,0,0,0.3); backdrop-filter: blur(4px); z-index: 1000; display: flex; justify-content: flex-end; `;
-const Sidebar = styled.div` width: 450px; background: #f8fbff; height: 100%; display: flex; flex-direction: column; `;
-const SidebarHeader = styled.div` padding: 25px 30px; background: white; border-bottom: 1px solid #f1f2f6; display: flex; justify-content: space-between; .title { display: flex; align-items: center; gap: 10px; } .close { background: none; border: none; cursor: pointer; } `;
-const FormContent = styled.form` padding: 25px 30px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; `;
-const PreviewCard = styled.div` background: white; border: 1px solid #e1e8ed; border-radius: 16px; padding: 15px; display: flex; align-items: center; gap: 15px; .preview-img { width: 60px; height: 60px; border-radius: 10px; overflow: hidden; background: #f1f2f6; display: flex; align-items: center; justify-content: center; } h5 { margin: 0; } p { margin: 0; font-size: 0.8rem; color: #b2bec3; } `;
-const InputGroup = styled.div` 
-  display: flex; flex-direction: column; gap: 6px; 
-  label { font-size: 0.75rem; font-weight: 700; } 
-  input, select, textarea { 
-    padding: 12px; border-radius: 10px; border: 1.5px solid #f1f2f6; font-family: inherit;
-    &:focus { outline: none; border-color: #7DAACB; }
-  }
-  textarea { resize: none; }
-`;
-const UploadLabel = styled.label` border: 2px dashed #f1f2f6; padding: 20px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; color: #7DAACB; font-weight: 600; span { font-size: 0.8rem; color: #b2bec3; } &:hover { background: #f0f7fc; } `;
-const Row = styled.div` display: grid; grid-template-columns: 1fr 1fr; gap: 15px; `;
-const SidebarFooter = styled.div` padding: 20px 30px; background: white; border-top: 1px solid #f1f2f6; display: flex; gap: 12px; button { flex: 1; padding: 14px; border-radius: 12px; font-weight: 700; border: none; cursor: pointer; } .save { background: #2d3436; color: white; &:disabled { opacity: 0.6; cursor: not-allowed; } } .cancel { background: #f1f2f6; } `;
-const EmptyState = styled.div` padding: 40px; text-align: center; color: #b2bec3; font-weight: 600; `;
 
+const Container = styled.div` padding: 30px; background: #F5F2EE; min-height: 100vh; font-family: 'DM Sans', sans-serif; `;
+const Header = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; h2 { color: #2A1F10; } p { color: #8A7B6D; } `;
+const ActionRow = styled.div` display: flex; gap: 15px; `;
+const SearchBox = styled.div` background: white; border-radius: 12px; display: flex; align-items: center; padding: 0 15px; border: 1px solid #EAE3D6; width: 300px; input { border: none; outline: none; height: 48px; width: 100%; color: #2A1F10; } `;
+const AddBtn = styled.button` background: #2A1F10; color: white; border: none; padding: 0 25px; border-radius: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.3s; &:hover { background: #B8935A; } `;
+const TabRow = styled.div` display: flex; gap: 10px; margin-bottom: 30px; `;
+const Tab = styled.button` background: ${props => props.$active ? '#2A1F10' : 'transparent'}; color: ${props => props.$active ? 'white' : '#8A7B6D'}; border: 1px solid #EAE3D6; padding: 10px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; `;
+const TableContainer = styled.div` background: white; border-radius: 20px; border: 1px solid #EAE3D6; overflow: hidden; `;
+const TableHead = styled.div` display: grid; grid-template-columns: 80px 2fr 1fr 1fr 1.5fr 120px; padding: 20px; background: #F5F2EE; border-bottom: 1px solid #EAE3D6; font-size: 0.75rem; font-weight: 800; color: #2A1F10; text-transform: uppercase; `;
+const TableRow = styled.div` display: grid; grid-template-columns: 80px 2fr 1fr 1fr 1.5fr 120px; padding: 15px 20px; align-items: center; border-bottom: 1px solid #F5F2EE; &:hover { background: #FCFBF9; } .col-img img { width: 45px; height: 45px; border-radius: 10px; object-fit: cover; } .col-main { display: flex; flex-direction: column; strong { color: #2A1F10; } span { font-size: 0.7rem; color: #8A7B6D; } } .col-price { font-weight: 700; color: #2A1F10; } `;
+const Tag = styled.span` background: #F5F2EE; color: #8A7B6D; padding: 4px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; `;
+const StockStatus = styled.div` font-size: 0.85rem; font-weight: 700; color: ${props => props.$low ? '#B91C1C' : '#15803D'}; `;
+const IconButton = styled.button` background: none; border: none; padding: 8px; color: #8A7B6D; cursor: pointer; &:hover { color: #B8935A; } &.del:hover { color: #B91C1C; } `;
+const Overlay = styled.div` position: fixed; inset: 0; background: rgba(42, 31, 16, 0.5); backdrop-filter: blur(4px); z-index: 1000; display: flex; justify-content: flex-end; `;
+const Sidebar = styled.div` width: 450px; background: white; height: 100%; display: flex; flex-direction: column; border-left: 1px solid #EAE3D6; `;
+const SidebarHeader = styled.div` padding: 25px 30px; border-bottom: 1px solid #EAE3D6; display: flex; justify-content: space-between; align-items: center; .title { display: flex; align-items: center; gap: 10px; color: #2A1F10; } .close { background: #F5F2EE; border: none; border-radius: 8px; padding: 8px; cursor: pointer; } `;
+const FormContent = styled.form` padding: 25px 30px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; `;
+const PreviewCard = styled.div` background: #F5F2EE; border: 1px solid #EAE3D6; border-radius: 12px; padding: 15px; display: flex; align-items: center; gap: 15px; .preview-img { width: 50px; height: 50px; border-radius: 8px; background: white; display: flex; align-items: center; justify-content: center; } h5 { margin: 0; color: #2A1F10; } p { margin: 0; font-size: 0.8rem; color: #8A7B6D; } `;
+const InputGroup = styled.div` display: flex; flex-direction: column; gap: 6px; label { font-size: 0.75rem; font-weight: 700; color: #2A1F10; } input, select, textarea { padding: 12px; border-radius: 8px; border: 1px solid #EAE3D6; font-family: inherit; &:focus { outline: none; border-color: #B8935A; } } `;
+const UploadLabel = styled.label` border: 2px dashed #EAE3D6; padding: 20px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; color: #B8935A; font-weight: 700; span { font-size: 0.8rem; color: #8A7B6D; } &:hover { background: #F5F2EE; } `;
+const Row = styled.div` display: grid; grid-template-columns: 1fr 1fr; gap: 15px; `;
+const SidebarFooter = styled.div` padding: 20px 30px; background: white; border-top: 1px solid #EAE3D6; display: flex; gap: 12px; button { flex: 1; padding: 14px; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; } .save { background: #2A1F10; color: white; &:hover { background: #B8935A; } } .cancel { background: #F5F2EE; color: #2A1F10; } `;
+const EmptyState = styled.div` padding: 40px; text-align: center; color: #8A7B6D; font-weight: 600; `;
 export default Products;

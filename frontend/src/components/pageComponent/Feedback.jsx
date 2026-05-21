@@ -1,17 +1,29 @@
 import React, { useState } from 'react';
-import styled from 'styled-components';
+import styled, { createGlobalStyle } from 'styled-components';
 import { useNavigate } from 'react-router-dom'; 
 import { 
   Star, Truck, Package, 
   Lightbulb, HelpCircle, Send, CheckCircle, ArrowLeft 
 } from 'lucide-react';
 import useApi from '../../hooks/useApi';
+import { motion } from 'framer-motion';
+
+const LocalStyle = createGlobalStyle`
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@600;700;800&display=swap');
+  
+  body {
+    background-color: #FAF7F2;
+    font-family: 'DM Sans', sans-serif;
+    color: #2A1F10;
+  }
+`;
+
 const Feedback = () => {
-  const {post} = useApi()
+  const { post } = useApi();
   const navigate = useNavigate();
   const [feedback, setFeedback] = useState({
-    full_name: localStorage.getItem('first_name')+ " "+ localStorage.getItem("last_name"),
-    email : localStorage.getItem('email'),
+    full_name: localStorage.getItem('first_name') + " " + localStorage.getItem("last_name"),
+    email: localStorage.getItem('email'),
     category: 'product',
     message: '',
   });
@@ -19,166 +31,380 @@ const Feedback = () => {
   const [submitted, setSubmitted] = useState(false);
 
   const categories = [
-    { id: 'product', label: 'Product Quality', icon: <Package size={20} /> },
-    { id: 'delivery', label: 'Delivery Service', icon: <Truck size={20} /> },
-    { id: 'price', label: 'Pricing/Value', icon: <Star size={20} /> },
-    { id: 'suggestion', label: 'New Suggestion', icon: <Lightbulb size={20} /> },
-    { id: 'other', label: 'Other', icon: <HelpCircle size={20} /> },
+    { id: 'product', label: 'Product Quality', icon: <Package size={18} /> },
+    { id: 'delivery', label: 'Delivery Service', icon: <Truck size={18} /> },
+    { id: 'price', label: 'Pricing/Value', icon: <Star size={18} /> },
+    { id: 'suggestion', label: 'New Suggestion', icon: <Lightbulb size={18} /> },
+    { id: 'other', label: 'Other', icon: <HelpCircle size={18} /> },
   ];
 
-  const handleSubmit =async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const result= await post('feedback/listCreate/' , feedback)
-    if(result.success)
-    {
-      console.log("feedback sent")
+    const result = await post('feedback/listCreate/', feedback);
+    if(result.success) {
+      console.log("feedback sent");
     }
     setSubmitted(true);
   };
 
   if (submitted) {
     return (
-      <SuccessWrapper className="page-fade-in">
-        <CheckCircle size={80} color="#7DAACB" />
-        <h2>Thank You!</h2>
-        <p>Your feedback helps us make Elsa Diary better for everyone.</p>
-        <div className="btn-group">
-          <button className="primary" onClick={() => setSubmitted(false)}>Submit Another</button>
-          <button className="secondary" onClick={() => navigate(-1)}>Go to Home</button>
-        </div>
-      </SuccessWrapper>
+      <PageWrapper>
+        <LocalStyle />
+        <Container>
+          <SuccessWrapper
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+          >
+            <div className="success-icon-wrap">
+              <CheckCircle size={44} color="#B8935A" strokeWidth={1.5} />
+            </div>
+            <h2>Thank You!</h2>
+            <p>Your feedback helps us make Elsa Diary better for everyone.</p>
+            <div className="btn-group">
+              <button className="primary" onClick={() => setSubmitted(false)}>Submit Another</button>
+              <button className="secondary" onClick={() => navigate(-1)}>Go Back</button>
+            </div>
+          </SuccessWrapper>
+        </Container>
+      </PageWrapper>
     );
   }
 
   return (
-    <Container>
-      <HeaderSection>
-        <BackButton onClick={() => navigate(-1)}>
-          <ArrowLeft size={18} /> Back
-        </BackButton>
-        <h1>Share Your Thoughts</h1>
-        <p>Select a category and tell us about your experience.</p>
-      </HeaderSection>
+    <PageWrapper>
+      <LocalStyle />
+      <Container>
+        <HeaderSection>
+          <BackButton onClick={() => navigate(-1)}>
+            <ArrowLeft size={16} /> Back
+          </BackButton>
+          <h1>Share Your Thoughts</h1>
+          <p>Select a category and tell us about your experience.</p>
+        </HeaderSection>
 
-      <FeedbackForm onSubmit={handleSubmit}>
-        <Label>What is your feedback about?</Label>
-        <CategoryGrid>
-          {categories.map((cat) => (
-            <CategoryCard 
-              key={cat.id}
-              $active={feedback.category === cat.id}
-              onClick={() => setFeedback({...feedback, category: cat.id})}
-              type="button"
-            >
-              {cat.icon}
-              <span>{cat.label}</span>
-            </CategoryCard>
-          ))}
-        </CategoryGrid>
+        <FeedbackForm onSubmit={handleSubmit}>
+          <Label>What is your feedback about?</Label>
+          <CategoryGrid>
+            {categories.map((cat) => (
+              <CategoryCard 
+                key={cat.id}
+                $active={feedback.category === cat.id}
+                onClick={() => setFeedback({...feedback, category: cat.id})}
+                type="button"
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="icon-wrap">{cat.icon}</div>
+                <span>{cat.label}</span>
+              </CategoryCard>
+            ))}
+          </CategoryGrid>
 
-        <InputGroup>
-          <Label>Your Feedback</Label>
-          <textarea 
-            rows="5"
-            placeholder={`Tell us about your experience...`}
-            required
-            value={feedback.message}
-            onChange={(e) => setFeedback({...feedback, message: e.target.value})}
-          />
-        </InputGroup>
+          <InputGroup>
+            <Label>Your Feedback</Label>
+            <textarea 
+              rows="5"
+              placeholder="Tell us about your experience in detail..."
+              required
+              value={feedback.message}
+              onChange={(e) => setFeedback({...feedback, message: e.target.value})}
+            />
+          </InputGroup>
 
-        <ButtonGroup>
-          <SubmitButton type="submit">
-            <Send size={18} /> Submit Feedback
-          </SubmitButton>
-          <CancelButton type="button" onClick={() => navigate(-1)}>
-            Cancel
-          </CancelButton>
-        </ButtonGroup>
-      </FeedbackForm>
-    </Container>
+          <ButtonGroup>
+            <SubmitButton type="submit">
+              <Send size={16} /> Submit Feedback
+            </SubmitButton>
+            <CancelButton type="button" onClick={() => navigate(-1)}>
+              Cancel and Return
+            </CancelButton>
+          </ButtonGroup>
+        </FeedbackForm>
+      </Container>
+    </PageWrapper>
   );
 };
 
+const PageWrapper = styled.div`
+  background-color: #FAF7F2;
+  min-height: 100vh;
+  width: 100%;
+`;
 
 const Container = styled.div`
-  max-width: 800px; margin: 0 auto; padding: 60px 20px;
+  max-width: 840px; 
+  margin: 0 auto; 
+  padding: 80px 5%;
 `;
 
 const HeaderSection = styled.div`
-  text-align: center; margin-bottom: 40px; position: relative;
-  h1 { font-size: 2.2rem; color: #2d3436; margin-bottom: 8px; }
-  p { color: #636e72; }
+  text-align: center; 
+  margin-bottom: 50px; 
+  position: relative;
+  
+  h1 { 
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 2.6rem); 
+    color: #2A1F10; 
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+  
+  p { 
+    color: #6B5C4A; 
+    font-size: 1.05rem;
+    font-weight: 500;
+  }
 `;
 
 const BackButton = styled.button`
-  position: absolute; left: 0; top: 0;
-  display: flex; align-items: center; gap: 8px;
-  background: none; border: none; color: #7DAACB;
-  font-weight: 700; cursor: pointer;
-  &:hover { color: #2d3436; }
-  @media (max-width: 768px) { position: static; margin-bottom: 20px; }
+  position: absolute; 
+  left: 0; 
+  top: 12px;
+  display: inline-flex; 
+  align-items: center; 
+  gap: 8px;
+  background: none; 
+  border: none; 
+  color: #6B5C4A;
+  font-weight: 700; 
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: color 0.25s ease, transform 0.25s ease;
+  
+  &:hover { 
+    color: #B8935A; 
+    transform: translateX(-4px);
+  }
+  
+  @media (max-width: 768px) { 
+    position: relative; 
+    top: 0;
+    margin-bottom: 24px; 
+  }
 `;
 
 const FeedbackForm = styled.form`
-  background: white; padding: 40px; border-radius: 30px;
-  border: 1px solid #f1f2f6; box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+  background: #FFFFFF; 
+  padding: 45px 40px; 
+  border-radius: 32px;
+  border: 1px solid #EAE3D6; 
+  box-shadow: 0 10px 30px rgba(42, 31, 16, 0.03);
+
+  @media (max-width: 480px) {
+    padding: 30px 20px;
+  }
 `;
 
 const Label = styled.label`
-  display: block; font-weight: 700; color: #2d3436; margin-bottom: 12px; font-size: 0.95rem;
+  display: block; 
+  font-weight: 700; 
+  color: #2A1F10; 
+  margin-bottom: 14px; 
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 `;
 
 const CategoryGrid = styled.div`
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 30px;
+  display: grid; 
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); 
+  gap: 12px; 
+  margin-bottom: 36px;
 `;
 
-const CategoryCard = styled.button`
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
-  padding: 15px; border-radius: 16px; border: 2px solid ${props => props.$active ? '#7DAACB' : '#f1f2f6'};
-  background: ${props => props.$active ? '#f8fbff' : 'white'};
-  color: ${props => props.$active ? '#7DAACB' : '#636e72'};
-  cursor: pointer; transition: 0.2s;
-  span { font-size: 0.8rem; font-weight: 600; }
-  &:hover { border-color: #7DAACB; }
+const CategoryCard = styled(motion.button)`
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  gap: 12px;
+  padding: 20px 12px; 
+  border-radius: 20px; 
+  border: 1px solid ${props => props.$active ? '#2A1F10' : '#EAE3D6'};
+  background: ${props => props.$active ? '#FFFFFF' : '#FFFFFF'};
+  color: ${props => props.$active ? '#B8935A' : '#6B5C4A'};
+  cursor: pointer; 
+  transition: border-color 0.25s, color 0.25s, box-shadow 0.25s;
+  box-shadow: ${props => props.$active ? '0 6px 16px rgba(42,31,16,0.04)' : 'none'};
+  
+  .icon-wrap {
+    background: #FAF7F2;
+    padding: 12px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: ${props => props.$active ? '#B8935A' : '#8C7A61'};
+    border: 1px solid #FAF7F2;
+  }
+
+  span { 
+    font-size: 0.85rem; 
+    font-weight: 700; 
+    text-align: center;
+    line-height: 1.2;
+  }
+  
+  &:hover { 
+    border-color: ${props => props.$active ? '#2A1F10' : '#B8935A'}; 
+  }
 `;
 
 const InputGroup = styled.div`
-  margin-bottom: 25px;
+  margin-bottom: 30px;
+  
   textarea {
-    width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #dfe6e9;
-    font-family: inherit; background: #fdfdfd; transition: 0.2s;
-    &:focus { outline: none; border-color: #7DAACB; background: white; }
+    width: 100%; 
+    padding: 16px 18px; 
+    border-radius: 14px; 
+    border: 1px solid #D8CFBE;
+    font-family: 'DM Sans', sans-serif; 
+    font-size: 0.98rem;
+    color: #2A1F10;
+    background: #FFFFFF; 
+    transition: all 0.25s ease;
+    box-sizing: border-box;
+    resize: vertical;
+    
+    &::placeholder { color: #A89B87; }
+    
+    &:focus { 
+      outline: none; 
+      border-color: #2A1F10; 
+      box-shadow: 0 0 0 4px rgba(42, 31, 16, 0.05);
+    }
   }
 `;
 
 const ButtonGroup = styled.div`
-  display: flex; flex-direction: column; gap: 12px;
+  display: flex; 
+  flex-direction: column; 
+  gap: 12px;
 `;
 
 const SubmitButton = styled.button`
-  width: 100%; padding: 18px; background: #2d3436; color: white;
-  border: none; border-radius: 16px; font-weight: 700; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 10px;
-  transition: 0.3s;
-  &:hover { background: #7DAACB; transform: translateY(-2px); }
+  width: 100%; 
+  padding: 16px; 
+  background: #2A1F10; 
+  color: #FFFFFF;
+  border: none; 
+  border-radius: 12px; 
+  font-weight: 700; 
+  font-size: 1rem;
+  cursor: pointer;
+  display: inline-flex; 
+  align-items: center; 
+  justify-content: center; 
+  gap: 10px;
+  box-shadow: 0 8px 20px rgba(42, 31, 16, 0.12);
+  transition: background-color 0.25s ease, transform 0.2s;
+  
+  &:hover { 
+    background: #40301B; 
+    transform: translateY(-1px); 
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
 `;
 
 const CancelButton = styled.button`
-  width: 100%; padding: 14px; background: none; color: #b2bec3;
-  border: none; font-weight: 600; cursor: pointer;
-  &:hover { color: #e74c3c; }
+  width: 100%; 
+  padding: 12px; 
+  background: none; 
+  color: #A89B87;
+  border: none; 
+  font-weight: 700; 
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  
+  &:hover { color: #EF4444; }
 `;
 
-const SuccessWrapper = styled.div`
-  text-align: center; padding: 100px 20px;
-  h2 { margin: 20px 0 10px; color: #2d3436; }
-  p { color: #636e72; margin-bottom: 30px; }
-  .btn-group { display: flex; justify-content: center; gap: 15px; }
-  button { padding: 12px 30px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
-  .primary { background: #7DAACB; color: white; border: none; }
-  .secondary { background: white; color: #7DAACB; border: 2px solid #7DAACB; }
-  .secondary:hover { background: #f8fbff; }
+const SuccessWrapper = styled(motion.div)`
+  text-align: center; 
+  background: #FFFFFF;
+  padding: 60px 40px;
+  border-radius: 32px;
+  border: 1px solid #EAE3D6;
+  box-shadow: 0 10px 30px rgba(42, 31, 16, 0.03);
+  max-width: 540px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  
+  .success-icon-wrap {
+    background: #FAF7F2;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+    border: 1px solid #EAE3D6;
+  }
+  
+  h2 { 
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    margin: 0 0 12px; 
+    color: #2A1F10; 
+    font-weight: 700;
+  }
+  
+  p { 
+    color: #6B5C4A; 
+    margin: 0 0 32px; 
+    font-size: 1.05rem;
+    line-height: 1.6;
+    font-weight: 500;
+  }
+  
+  .btn-group { 
+    display: flex; 
+    justify-content: center; 
+    gap: 16px; 
+    
+    @media (max-width: 480px) {
+      flex-direction: column;
+    }
+  }
+  
+  button { 
+    padding: 14px 28px; 
+    border-radius: 12px; 
+    font-weight: 700; 
+    font-size: 0.95rem;
+    cursor: pointer; 
+    transition: all 0.2s ease;
+    
+    @media (max-width: 480px) {
+      width: 100%;
+    }
+  }
+  
+  .primary { 
+    background: #2A1F10; 
+    color: #FFFFFF; 
+    border: none;
+    box-shadow: 0 6px 16px rgba(42, 31, 16, 0.1);
+    
+    &:hover { background: #40301B; }
+  }
+  
+  .secondary { 
+    background: #FFFFFF; 
+    border: 1px solid #D8CFBE; 
+    color: #2A1F10; 
+    
+    &:hover { 
+      background: #FAF7F2; 
+    }
+  }
 `;
 
 export default Feedback;

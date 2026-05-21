@@ -13,7 +13,8 @@ from .views import (
     PasswordResetConfirmView,
     UserListView,
     SendDirectMailView,
-    CompanyConfigurationView
+    CompanyConfigurationView,
+    UserDetailByUsernameView, UserOrderHistoryView
 )
 urlpatterns = [
     path('api/token/',TokenObtainPairView.as_view(),name="token_obtain_pair"),
@@ -27,4 +28,7 @@ urlpatterns = [
     path('sendMail/', SendDirectMailView.as_view(), name="SendMail"),
     path('company-info/', CompanyConfigurationView.as_view(), name='company-info'),
     path('company-info/update/', CompanyConfigurationView.as_view(), name='company-info-update'),
-]
+    path('user/history/', UserOrderHistoryView.as_view(), name="user-order-history"),
+    path('user/profile/<str:username>/', UserDetailByUsernameView.as_view(), name="user-profile-by-username")
+    
+    ]

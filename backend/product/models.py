@@ -6,7 +6,7 @@ class Category(models.Model):
     unit = models.CharField(max_length=20) 
 
     def __str__(self):
-        return f"{self.name} ({self.unit})"
+        return f"{self.name}"
 
 class Product(models.Model):
     product_name=models.CharField(max_length=200)

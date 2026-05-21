@@ -13,7 +13,7 @@ import Contact from './components/pageComponent/ContactUs';
 import Feedback from './components/pageComponent/Feedback';
 import ResetPasswordConfirm from './components/pageComponent/ResetPasswordConfirm';
 import NotFound from './components/pageComponent/NotFound';
-
+import Profile from './components/pageComponent/Profile';
 const ProtectedRoutes = () => {
   const access_token = localStorage.getItem("access_token");
   if (!access_token) {
@@ -21,8 +21,6 @@ const ProtectedRoutes = () => {
   }
   return <Outlet />;
 };
-
-
 
 function App() {
   return (
@@ -39,6 +37,7 @@ function App() {
           <Route index element={<HomePage />} />
           <Route path="products" element={<Product />} />
           <Route path="contactUs" element={<Contact />} />
+          <Route path="profile" element={<Profile />} />
 
           <Route element={<ProtectedRoutes />}>
             <Route path="cartPage" element={<Cart />} />

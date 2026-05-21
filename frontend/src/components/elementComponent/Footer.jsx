@@ -1,17 +1,21 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
+import styled, { createGlobalStyle } from 'styled-components';
 import { FiInstagram, FiFacebook, FiTwitter, FiMail } from 'react-icons/fi';
+
+const LocalStyle = createGlobalStyle`
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@600;700;800&display=swap');
+`;
 
 const FooterSection = () => {
   const navigate = useNavigate();
   
   return (
     <FooterWrapper>
+      <LocalStyle />
       <div className="footer-content">
-        {/* Brand Section */}
         <BrandSection>
-          <h3 onClick={() => navigate("/")}>Elsa<span>Dairy</span></h3>
+          <h3 onClick={() => navigate("/")}>Elsa<span>Diary</span></h3>
           <p>
             Bringing the purity of local dairy directly to your digital doorstep. 
             Quality you can trust, fresh from the farm.
@@ -24,7 +28,6 @@ const FooterSection = () => {
           </SocialIcons>
         </BrandSection>
 
-        {/* Links Grid */}
         <LinksGrid>
           <div className="link-column">
             <h4>Explore</h4>
@@ -52,14 +55,13 @@ const FooterSection = () => {
   );
 };
 
-// --- STYLED COMPONENTS ---
-
 const FooterWrapper = styled.footer`
-  /* Dark  Background */
-  background: #1a1e21; 
+  background: #1E160C; 
   padding: 80px 8% 40px;
   margin-top: 120px;
-  color: #ffffff;
+  color: #FAF7F2;
+  font-family: 'DM Sans', sans-serif;
+  border-top: 1px solid #2A1F10;
 
   .footer-content {
     max-width: 1200px;
@@ -78,24 +80,26 @@ const FooterWrapper = styled.footer`
   .footer-bottom {
     max-width: 1200px;
     margin: 0 auto;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(234, 227, 214, 0.1);
     padding-top: 30px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: #888;
-    font-size: 0.85rem;
+    color: #A89B87;
+    font-size: 0.88rem;
+    font-weight: 500;
 
     .legal span {
       margin-left: 25px;
       cursor: pointer;
-      transition: 0.3s;
-      &:hover { color: #7DAACB; }
+      transition: color 0.25s ease;
+      
+      &:hover { color: #B8935A; }
     }
 
     @media (max-width: 600px) {
       flex-direction: column;
-      gap: 20px;
+      gap: 16px;
       text-align: center;
       .legal span { margin: 0 12px; }
     }
@@ -104,35 +108,42 @@ const FooterWrapper = styled.footer`
 
 const BrandSection = styled.div`
   flex: 1.5;
+  
   h3 {
-    font-size: 1.8rem;
-    font-weight: 900;
-    color: #ffffff;
-    margin-bottom: 20px;
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #FFFFFF;
+    margin: 0 0 20px;
     cursor: pointer;
     letter-spacing: -0.5px;
-    span { color: #7DAACB; }
+    
+    span { color: #B8935A; }
   }
+  
   p {
-    color: #a0a0a0;
-    font-size: 1rem;
+    color: #D8CFBE;
+    font-size: 0.98rem;
     line-height: 1.7;
-    max-width: 340px;
-    margin-bottom: 25px;
+    max-width: 360px;
+    margin: 0 0 30px;
+    font-weight: 400;
   }
 `;
 
 const SocialIcons = styled.div`
   display: flex;
-  gap: 20px;
-  color: #666;
-  font-size: 1.3rem;
+  gap: 16px;
+  color: #A89B87;
+  font-size: 1.25rem;
+  
   svg {
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    
     &:hover { 
-      color: #7DAACB; 
-      transform: translateY(-5px); 
+      color: #B8935A; 
+      transform: translateY(-4px); 
     }
   }
 `;
@@ -146,25 +157,30 @@ const LinksGrid = styled.div`
   .link-column {
     display: flex;
     flex-direction: column;
+    
     h4 {
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       text-transform: uppercase;
-      letter-spacing: 2px;
-      color: #ffffff;
+      letter-spacing: 1.5px;
+      color: #FFFFFF;
       margin-bottom: 25px;
-      font-weight: 800;
-      opacity: 0.9;
+      font-weight: 700;
     }
+    
     span {
-      color: #a0a0a0;
+      color: #D8CFBE;
       font-size: 0.95rem;
-      margin-bottom: 15px;
+      margin-bottom: 14px;
       cursor: pointer;
-      transition: all 0.2s ease;
-      font-weight: 400;
+      transition: all 0.25s ease;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      position: relative;
+      
       &:hover { 
-        color: #7DAACB; 
-        padding-left: 5px; 
+        color: #B8935A; 
+        transform: translateX(4px);
       }
     }
   }

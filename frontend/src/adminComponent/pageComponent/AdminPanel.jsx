@@ -9,20 +9,13 @@ import MailPage from './Mail';
 import Feedbacks from './Feedbacks';
 import CompanyDetails from './CompanyDetails';
 import Category from './Category';
+import logo from '../../../public/logo.png';
+
 
 import { 
-  LayoutDashboard, 
-  ShoppingCart, 
-  Truck, 
-  Mail, 
-  Package, 
-  Users, 
-  ChevronRight,
-  LogOut,
-  MessageSquare,
-
+  LayoutDashboard, ShoppingCart, Truck, Mail, Package, Users, 
+  ChevronRight, LogOut, Building2, Tag, Star
 } from 'lucide-react';
-
 
 const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState('orders');
@@ -34,62 +27,43 @@ const AdminPanel = () => {
     { id: 'users', label: 'Users', icon: <Users size={20} /> },
     { id: 'contacts', label: 'Contacts', icon: <LayoutDashboard size={20} /> },
     { id: 'mail', label: 'Send Mail', icon: <Mail size={20} /> },
-    { id: 'feedbacks', label: 'Feedbacks',icon:<MessageSquare size={20}/>},
-    { id: 'company_details', label: 'Company Details',icon:<MessageSquare size={20}/>},
-    { id: 'category', label: 'Category',icon:<MessageSquare size={20}/>},
-
+    { id: 'feedbacks', label: 'Feedbacks', icon: <Star size={20} /> },
+    { id: 'company_details', label: 'Company Details', icon: <Building2 size={20} /> },
+    { id: 'category', label: 'Category', icon: <Tag size={20} /> },
   ];
 
-  const renderContent =()=>
-  {
-    switch(activeTab){
-      case 'orders':
-        return <OrderReport />
-      case 'delivery':
-        return <DeliveryReport />
-      case 'products':
-        return <Products />
-      case 'users':
-        return <UsersReport />
-      case 'contacts':
-        return <Contacts />
-      case 'feedbacks':
-        return <Feedbacks />
-      case 'mail':
-        return <MailPage />
-      case 'company_details':
-        return <CompanyDetails />
-      case 'category':
-        return <Category />
-      
-    
-      
+  const renderContent = () => {
+    switch(activeTab) {
+      case 'orders': return <OrderReport />;
+      case 'delivery': return <DeliveryReport />;
+      case 'products': return <Products />;
+      case 'users': return <UsersReport />;
+      case 'contacts': return <Contacts />;
+      case 'feedbacks': return <Feedbacks />;
+      case 'mail': return <MailPage />;
+      case 'company_details': return <CompanyDetails />;
+      case 'category': return <Category />;
+      default: return <OrderReport />;
     }
+  };
 
-  }
   return (
     <AdminWrapper>
       <Sidebar>
-        <LogoSection>
-          <div className="logo-icon">🥛</div>
-          <div className="logo-text">
-            Elsa<span>Admin</span>
-          </div>
+   <LogoSection href="/">
+          <img src={logo} alt="Elsa Premium Dairy" />
         </LogoSection>
 
         <MenuSection>
-          <p className="menu-label">Main Menu</p>
           {menuOptions.map((item) => (
             <MenuItem 
               key={item.id} 
               $active={activeTab === item.id}
               onClick={() => setActiveTab(item.id)}
             >
-              <div className="icon-label">
-                {item.icon}
-                <span>{item.label}</span>
-              </div>
-              <ChevronRight size={14} className="arrow" />
+              {item.icon}
+              <span>{item.label}</span>
+              {activeTab === item.id && <div className="active-pill" />}
             </MenuItem>
           ))}
         </MenuSection>
@@ -102,11 +76,14 @@ const AdminPanel = () => {
         </FooterSection>
       </Sidebar>
 
-       <MainContent>
+      <MainContent>
         <Header>
           <h2>{menuOptions.find(m => m.id === activeTab)?.label}</h2>
           <div className="user-profile">
-            <span>Archana (Admin)</span>
+            <div className="admin-info">
+              <span className="name">Archana</span>
+              <span className="role">Administrator</span>
+            </div>
             <div className="avatar">A</div>
           </div>
         </Header>
@@ -114,147 +91,92 @@ const AdminPanel = () => {
         <ContentBody>
           {renderContent()}
         </ContentBody> 
-       </MainContent> 
+      </MainContent> 
     </AdminWrapper>
   );
 };
 
-
 const AdminWrapper = styled.div`
-  display: flex;
-  min-height: 100vh;
-  background-color: #f8f9fa;
+  display: flex; min-height: 100vh;
+  background-color: #FAF7F2; 
+  font-family: 'DM Sans', sans-serif;
 `;
 
 const Sidebar = styled.aside`
-  width: 280px;
-  background-color: #ffffff;
-  border-right: 1px solid #eee;
-  display: flex;
-  flex-direction: column;
-  position: fixed;
-  height: 100vh;
+  width: 280px; background-color: #FFFFFF;
+  border-right: 1px solid #EAE3D6;
+  display: flex; flex-direction: column;
+  position: fixed; height: 100vh;
 `;
 
-const LogoSection = styled.div`
-  padding: 30px;
+
+const LogoSection = styled.a`
   display: flex;
   align-items: center;
-  gap: 12px;
-  .logo-icon {
-    font-size: 1.5rem;
-    background: #CFECF3;
-    padding: 8px;
-    border-radius: 12px;
-  }
-  .logo-text {
-    font-size: 1.4rem;
-    font-weight: 800;
-    color: #2d3436;
-    span { color: #7DAACB; }
-  }
-`;
-
-const MenuSection = styled.div`
-  flex: 1;
-  padding: 0 20px;
-  .menu-label {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    color: #b2bec3;
-    font-weight: 700;
-    margin-bottom: 20px;
-    padding-left: 10px;
-  }
-`;
-
-const MenuItem = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  border-radius: 14px;
-  margin-bottom: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease;
+  padding: 20px;
   
- 
-  background: ${props => props.$active ? '#7DAACB' : 'transparent'};
-  color: ${props => props.$active ? 'white' : '#636e72'};
-
-  .icon-label {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    span { font-weight: 600; font-size: 0.95rem; }
-  }
-
-  .arrow {
-    opacity: ${props => props.$active ? 1 : 0};
-    transform: translateX(${props => props.$active ? '0' : '-10px'});
-    transition: 0.3s;
+  img {
+    height: 120px; 
+    width: auto;
+    object-fit: contain;
   }
 
   &:hover {
-    background: ${props => props.$active ? '#7DAACB' : '#f1f2f6'};
-    color: ${props => props.$active ? 'white' : '#2d3436'};
+    transform: scale(1.02);
+  }
+`;
+
+const MenuSection = styled.div`flex: 1; padding: 0 20px; overflow-y: auto;`;
+
+const MenuItem = styled.div`
+  display: flex; align-items: center; gap: 15px;
+  padding: 14px 20px; border-radius: 12px; margin-bottom: 4px;
+  cursor: pointer; position: relative; transition: all 0.3s ease;
+  background: ${props => props.$active ? '#EAE3D6' : 'transparent'};
+  color: ${props => props.$active ? '#2A1F10' : '#8A7B6D'};
+  font-weight: ${props => props.$active ? '700' : '500'};
+
+  &:hover { background: ${props => props.$active ? '#EAE3D6' : '#F5F2EE'}; color: #2A1F10; }
+  .active-pill {
+    position: absolute; right: 15px; width: 6px; height: 6px;
+    background: #B8935A; border-radius: 50%;
   }
 `;
 
 const FooterSection = styled.div`
-  padding: 20px;
-  border-top: 1px solid #eee;
+  padding: 25px;
   .logout-btn {
-    width: 100%;
-    padding: 12px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    border: none;
-    background: #fff5f5;
-    color: #ff7675;
-    border-radius: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    &:hover { background: #ffeaea; }
+    width: 100%; padding: 12px; display: flex; align-items: center; gap: 12px;
+    border: none; background: #2A1F10; color: #FFF; border-radius: 12px; 
+    font-weight: 700; cursor: pointer; transition: 0.3s;
+    &:hover { background: #B8935A; }
   }
- `;
+`;
 
- const MainContent = styled.main`
-  flex: 1;
-  margin-left: 280px; 
-  padding: 30px;
-`; 
+const MainContent = styled.main`flex: 1; margin-left: 280px; padding: 40px;`; 
 
 const Header = styled.header`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  h2 { font-size: 1.8rem; color: #2d3436; }
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;
+  h2 { font-family: 'Playfair Display'; font-size: 2rem; color: #2A1F10; }
   .user-profile {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    span { font-weight: 600; color: #636e72; }
+    display: flex; align-items: center; gap: 15px;
+    .admin-info { display: flex; flex-direction: column; align-items: flex-end;
+      .name { font-weight: 700; color: #2A1F10; }
+      .role { font-size: 0.8rem; color: #B8935A; }
+    }
     .avatar {
-      width: 40px; height: 40px;
-      background: #7DAACB;
-      color: white;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 800;
+      width: 45px; height: 45px; background: #2A1F10; color: #B8935A; 
+      border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-family: 'Playfair Display';
     }
   }
 `;
 
 const ContentBody = styled.div`
-  background: white;
-  min-height: 400px;
-  border-radius: 30px;
-  padding: 40px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+  background: white; min-height: 500px; border-radius: 20px;
+  padding: 40px; border: 1px solid #EAE3D6;
+  box-shadow: 0 4px 20px rgba(42,31,16,0.05);
 `;
-
 
 export default AdminPanel;
