@@ -38,20 +38,28 @@ python manage.py runserver
 
 ## Customer Panel
 
+# Landing Page
 ![Landing Page](assets/Landingpage.png)
 
+# User Product Page
 ![User Product Page](assets/productPage.png)
 
+# Contact & Support Intake
 ![Contact & Support Intake](assets/ContactPage.png)
 
+# Login Page
 ![Authentication Portal](assets/loginPage.png)
 
+# Registration Page
 ![Registration Hub](assets/RegisterPage.png)
 
+# Password Recovery Portal
 ![Password Recovery Portal](assets/ResetPassword.png)
 
+# Cart Page
 ![Shopping Cart System](assets/cartpage.png)
 
+# Customer Feedback Terminal
 ![Customer Feedback Terminal](assets/Feedbackpage.png)
 
 
@@ -61,34 +69,47 @@ python manage.py runserver
 
 ### Order Handling
 
+# Admin Order Report Page
 ![Admin Order Report Page](assets/orderpage.png)
 
+# Admin Order placement system
 ![Admin Order placement system](assets/createneworder.png)
 
+# Rejected Order Operations Terminal
 ![Rejected Order Operations Terminal](assets/rejectedOrderHandle.png)
 
+# Pending Orders Panel
 ![Pending Orders Panel](assets/pendingorder.png)
 
 ---
 
+# Product Creation
 ![Product Creation](assets/productCreate.png)
 
+# Admin Product Page
 ![Admin Product Page](assets/adminProductPage.png)
 
+# User report Page
 ![User Accounts](assets/userpage.png)
 
 An administrative messaging system using custom template parsers to distribute personalized HTML updates directly to a list of recipients.
 ![Direct Mail Transmission Panel](assets/sendemail.png)
 
+# Contact List
 ![Contact List](assets/contactpageadmin.png)
 
+# Customer Feedback Page
 ![Customer Feedback Terminal](assets/feedbackadminpage.png)
 
+# Company Details Page
 ![Company Detail](assets/companydetail.png)
 
+#Product Category Report Page
 ![Category Configuration Engine](assets/categoryadmin.png)
 
+# Delivery Report
 ![Delivery report](assets/DeliveryReport.png)
+
 
 ![Order using three way](assets/buyesewa.png)
 
