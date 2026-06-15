@@ -25,9 +25,6 @@ DATABASES = {
     )
 }
 
-
-
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 MEDIA_URL = '/media/'
 MEDIA_ROOT =os.path.join(BASE_DIR, 'media')
@@ -45,7 +42,8 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'https://dairy-management-system-te10.onrender.com',
     'localhost',
-    '127.0.0.1'
+    '127.0.0.1',
+    'dairy-management-system-te10.onrender.com'
 ]
 
 
