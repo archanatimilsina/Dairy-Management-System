@@ -182,7 +182,8 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
     'https://dairy-management-system-git-main-archanatimilsinas-projects.vercel.app',
     'dairy-management-system-rho.vercel.app',
-    'dairy-management-system-ej2jdvxiy-archanatimilsinas-projects.vercel.app'
+    'dairy-management-system-ej2jdvxiy-archanatimilsinas-projects.vercel.app',
+    'https://dairy-management-system-rho.vercel.app'
 ]
 
 
