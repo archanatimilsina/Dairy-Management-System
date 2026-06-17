@@ -26,43 +26,75 @@ return config;
 // Request Interceptor
 
 // Response Interceptor
+// api.interceptors.response.use(
+//     (response)=>response,
+//    async (error)=>
+//     {
+//        const originalRequest = error.config;
+//        if(error.response?.status === 401 && !originalRequest._retry) 
+//        {
+//         originalRequest._retry = true;
+
+// try{
+// const refreshToken = localStorage.getItem('refresh_token');
+// const response = await axios.post(`${import.meta.env.VITE_API_URL}api/token/refresh/`,{
+//     refresh:refreshToken,
+// });
+
+// if(response.status === 200)
+// {
+//     localStorage.setItem('access_token',response.data.access);
+// if (response.data.refresh) {
+//         localStorage.setItem('refresh_token', response.data.refresh);
+//     }
+//         originalRequest.headers.Authorization=`Bearer ${response.data.access}`
+//     return api(originalRequest);
+// }
+// }catch(refreshError)
+// {
+//     localStorage.removeItem('access_token');
+//     localStorage.removeItem('refresh_token');
+//     if (!window.location.pathname.includes('login')) {
+//                     window.location.href = '/loginPage';
+//                 }
+//                 return Promise.reject(refreshError);
+// }
+// return Promise.reject(Error)
+//        }
+//     }
+// )
+
 api.interceptors.response.use(
-    (response)=>response,
-   async (error)=>
-    {
-       const originalRequest = error.config;
-       if(error.response?.status === 401 && !originalRequest._retry) 
-       {
-        originalRequest._retry = true;
-
-try{
-const refreshToken = localStorage.getItem('refresh_token');
-const response = await axios.post(`${import.meta.env.VITE_API_URL}api/token/refresh/`,{
-    refresh:refreshToken,
-});
-
-if(response.status === 200)
-{
-    localStorage.setItem('access_token',response.data.access);
-if (response.data.refresh) {
-        localStorage.setItem('refresh_token', response.data.refresh);
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const refreshToken = localStorage.getItem('refresh_token');
+        const response = await axios.post(`${import.meta.env.VITE_API_URL}api/token/refresh/`, {
+          refresh: refreshToken,
+        });
+        if (response.status === 200) {
+          localStorage.setItem('access_token', response.data.access);
+          if (response.data.refresh) {
+            localStorage.setItem('refresh_token', response.data.refresh);
+          }
+          originalRequest.headers.Authorization = `Bearer ${response.data.access}`;
+          return api(originalRequest);
+        }
+      } catch (refreshError) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        if (!window.location.pathname.includes('login')) {
+          window.location.href = '/loginPage';
+        }
+        return Promise.reject(refreshError);
+      }
     }
-        originalRequest.headers.Authorization=`Bearer ${response.data.access}`
-    return api(originalRequest);
-}
-}catch(refreshError)
-{
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    if (!window.location.pathname.includes('login')) {
-                    window.location.href = '/loginPage';
-                }
-                return Promise.reject(refreshError);
-}
-return Promise.reject(Error)
-       }
-    }
-)
+    return Promise.reject(error); // <- the missing piece, always reject otherwise
+  }
+);
 // Response Interceptor
 
 export default api;

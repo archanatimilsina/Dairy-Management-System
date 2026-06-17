@@ -13,13 +13,6 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self,validated_data):
         contact = validated_data.pop('contact')
-        # user= User.objects.create_user(
-        #     username = validated_data['username'],
-        #     email = validated_data['email'],
-        #     password = validated_data['password'],
-        #     first_name=validated_data['first_name'],
-        #     last_name=validated_data['last_name']
-        # )
         user = User.objects.create_user(**validated_data)
         user.profile.contact = contact
         user.profile.save()
