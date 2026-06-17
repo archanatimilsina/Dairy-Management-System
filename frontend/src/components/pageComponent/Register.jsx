@@ -45,6 +45,8 @@ const RegisterPage = () => {
     if (result.success) {
       localStorage.setItem('access_token', result.data.access);
       localStorage.setItem('refresh_token', result.data.refresh);
+      localStorage.setItem('username', result.data.user.username);
+      localStorage.setItem('IsLoggedIn', 'true');
       navigate('/');
     }
   };

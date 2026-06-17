@@ -62,8 +62,6 @@ const filteredProducts = products.filter(p =>
   return (
     <PageWrapper>
       <GlobalStyle />
-   
-
       <HeroSection>
         <HeroGrid>
           <HeroContent>

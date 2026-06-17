@@ -92,7 +92,7 @@ api.interceptors.response.use(
         return Promise.reject(refreshError);
       }
     }
-    return Promise.reject(error); // <- the missing piece, always reject otherwise
+    return Promise.reject(error); 
   }
 );
 // Response Interceptor
