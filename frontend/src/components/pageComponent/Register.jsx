@@ -41,7 +41,7 @@ const RegisterPage = () => {
       return;
     }
     const result = await post('register/', formData);
-
+   console.log(result)
     if (result.success) {
       localStorage.setItem('access_token', result.data.access);
       localStorage.setItem('refresh_token', result.data.refresh);
