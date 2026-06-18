@@ -6,8 +6,6 @@ import {
 } from 'lucide-react';
 import useApi from '../../hooks/useApi';
 
-
-
 const Products = () => {
   const { post, get, loading } = useApi();
   
@@ -27,9 +25,6 @@ const Products = () => {
     picture_src: null
   });
 
-
-
- 
   useEffect(() => {
     const fetchInitialData = async ()=>
     {
@@ -42,7 +37,6 @@ const Products = () => {
       }
 
     }
-   
     fetchInitialData();
   }, [get]); 
 
@@ -75,20 +69,24 @@ const Products = () => {
     if (formData.description.trim()) {
         data.append('description', formData.description);
     }
-    
     if (formData.picture_src) {
       data.append('picture_src', formData.picture_src); 
     }
-
     const result = await post("product/listCreate/", data);
-    
     if (result.success) {
-setProducts(prev => [result.data, ...prev]);        
+      const matchedCategory = categories.find(
+        c => String(c.id) === String(result.data.category)
+      );
+      const enrichedProduct = {
+        ...result.data,
+        category_name: result.data.category_name || matchedCategory?.name || ""
+      };
+      setProducts(prev => [enrichedProduct, ...prev]);
       setFormData({
         name: "",
-        category: "Milk",
+        category: categories.length > 0 ? categories[0].id : "",  // ← real ID
         price: "",
-        unit: "Litre",
+        unit: "",
         stock: "",
         description: "",
         picture_src: null
@@ -98,12 +96,9 @@ setProducts(prev => [result.data, ...prev]);
       setShowForm(false);
     }
   };
-  console.log(products)
-
-
 const filteredProducts = products.filter(p => {
-  const matchesSearch = p.category_name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesTab = activeTab === "All" || p.category_name === activeTab.toLowerCase();
+  const matchesSearch = p.product_name?.toLowerCase().includes(searchTerm.toLowerCase());
+  const matchesTab = activeTab === "All" || (p.category_name || "").toLowerCase() === activeTab.toLowerCase();
   return matchesSearch && matchesTab;
 });
   return (
