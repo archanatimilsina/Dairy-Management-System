@@ -34,7 +34,6 @@ useEffect( ()=>
 const result = await get('user/listView/')
 if(result.success)
 {
-  console.log(result.data)
   setUsers(result.data)
 }
   }

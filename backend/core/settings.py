@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 load_dotenv()
 import dj_database_url
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 DATABASES = {
     'default': dj_database_url.config(
@@ -24,8 +25,21 @@ DATABASES = {
         conn_max_age=600,
     )
 }
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+SUPABASE_URL = os.environ.get('SUPABASE_URL')
+SUPABASE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')  
+
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT =os.path.join(BASE_DIR, 'media')
 
@@ -181,8 +195,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:5173',
     'http://localhost:5173',
     'https://dairy-management-system-git-main-archanatimilsinas-projects.vercel.app',
-    'dairy-management-system-rho.vercel.app',
-    'dairy-management-system-ej2jdvxiy-archanatimilsinas-projects.vercel.app',
+    'https://dairy-management-system-ej2jdvxiy-archanatimilsinas-projects.vercel.app',
     'https://dairy-management-system-rho.vercel.app'
 ]
 

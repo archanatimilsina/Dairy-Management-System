@@ -12,7 +12,7 @@ class Product(models.Model):
     product_name=models.CharField(max_length=200)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
     price=models.DecimalField(max_digits=20,decimal_places=2)
-    picture_src = models.URLField(max_length=500, null=True, blank=True)
+    picture_src = models.ImageField(upload_to='products/', null=True, blank=True)
     description=models.TextField(blank=True,null=True)
     stock=models.IntegerField(default=0)
     def __str__(self):
