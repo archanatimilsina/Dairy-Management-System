@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styled, { createGlobalStyle } from 'styled-components';
-import { Mail, Lock, User, Phone, ArrowRight, Eye, EyeOff, AtSign, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, Phone, ArrowRight, Eye, EyeOff, AtSign } from 'lucide-react';
 import useApi from '../../hooks/useApi';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -41,7 +41,10 @@ const RegisterPage = () => {
       return;
     }
     const result = await post('register/', formData);
-   console.log(result)
+    console.log(result);
+    if (!result.success) {
+      console.error("Registration error:", error);
+    }
     if (result.success) {
       localStorage.setItem('access_token', result.data.access);
       localStorage.setItem('refresh_token', result.data.refresh);
@@ -49,11 +52,6 @@ const RegisterPage = () => {
       localStorage.setItem('IsLoggedIn', 'true');
       navigate('/');
     }
-  };
-
-  const renderError = () => {
-    if (!error) return null;
-    return error;
   };
 
   return (
@@ -67,13 +65,6 @@ const RegisterPage = () => {
         </LogoArea>
 
         <FormContainer onSubmit={handleSubmit}>
-          {error && (
-            <ErrorBanner>
-              <AlertCircle size={16} />
-              <span>{renderError()}</span>
-            </ErrorBanner>
-          )}
-
           <FormRow>
             <InputGroup>
               <label>First Name</label>
@@ -218,21 +209,6 @@ const AuthCard = styled.div`
   @media (max-width: 480px) {
     padding: 40px 24px;
   }
-`;
-
-const ErrorBanner = styled.div`
-  background: #FFF5F5;
-  color: #C53030;
-  padding: 14px 16px;
-  border-radius: 12px;
-  border: 1px solid #FEB2B2;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  text-align: left;
-  line-height: 1.4;
 `;
 
 const LogoArea = styled.div`
