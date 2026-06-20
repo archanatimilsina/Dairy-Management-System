@@ -129,7 +129,7 @@ const PAGE_SIZE = 20;
                 >
                   <ImageContainer>
                     <img src={product.picture_src} alt={product.product_name} loading="lazy" />
-                    <CategoryBadge>{product.category}</CategoryBadge>
+                    <CategoryBadge>{product.category_name}</CategoryBadge>
                   </ImageContainer>
                   
                   <CardBody>
