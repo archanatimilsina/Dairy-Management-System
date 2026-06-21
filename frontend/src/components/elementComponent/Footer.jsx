@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled, { createGlobalStyle } from 'styled-components';
 import { FiInstagram, FiFacebook, FiTwitter, FiMail } from 'react-icons/fi';
+import { FaTiktok } from 'react-icons/fa6';
+import useApi from '../../hooks/useApi';
 
 const LocalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@600;700;800&display=swap');
@@ -9,7 +11,31 @@ const LocalStyle = createGlobalStyle`
 
 const FooterSection = () => {
   const navigate = useNavigate();
-  
+  const { get } = useApi();
+
+  const [company, setCompany] = useState({
+    facebook_url: null,
+    instagram_url: null,
+    tiktok_url: null,
+    support_email: null,
+  });
+
+  useEffect(() => {
+    const fetchCompany = async () => {
+      const result = await get('company-info/');
+      if (result.success) setCompany(result.data);
+    };
+    fetchCompany();
+  }, [get]);
+
+  const openLink = (url) => {
+    if (url) window.open(url, '_blank', 'noopener noreferrer');
+  };
+
+  const openMail = (email) => {
+    if (email) window.location.href = `mailto:${email}`;
+  };
+
   return (
     <FooterWrapper>
       <LocalStyle />
@@ -21,10 +47,34 @@ const FooterSection = () => {
             Quality you can trust, fresh from the farm.
           </p>
           <SocialIcons>
-            <FiInstagram title="Instagram" />
-            <FiFacebook title="Facebook" />
-            <FiTwitter title="Twitter" />
-            <FiMail title="Email" />
+            <SocialIcon 
+              $active={!!company.instagram_url} 
+              onClick={() => openLink(company.instagram_url)} 
+              title="Instagram"
+            >
+              <FiInstagram />
+            </SocialIcon>
+            <SocialIcon 
+              $active={!!company.facebook_url} 
+              onClick={() => openLink(company.facebook_url)} 
+              title="Facebook"
+            >
+              <FiFacebook />
+            </SocialIcon>
+            <SocialIcon 
+              $active={!!company.tiktok_url} 
+              onClick={() => openLink(company.tiktok_url)} 
+              title="TikTok"
+            >
+              <FaTiktok />
+            </SocialIcon>
+            <SocialIcon 
+              $active={!!company.support_email} 
+              onClick={() => openMail(company.support_email)} 
+              title={company.support_email || "Email"}
+            >
+              <FiMail />
+            </SocialIcon>
           </SocialIcons>
         </BrandSection>
 
@@ -93,7 +143,6 @@ const FooterWrapper = styled.footer`
       margin-left: 25px;
       cursor: pointer;
       transition: color 0.25s ease;
-      
       &:hover { color: #B8935A; }
     }
 
@@ -117,7 +166,6 @@ const BrandSection = styled.div`
     margin: 0 0 20px;
     cursor: pointer;
     letter-spacing: -0.5px;
-    
     span { color: #B8935A; }
   }
   
@@ -134,16 +182,21 @@ const BrandSection = styled.div`
 const SocialIcons = styled.div`
   display: flex;
   gap: 16px;
-  color: #A89B87;
   font-size: 1.25rem;
-  
+`;
+
+const SocialIcon = styled.div`
+  color: ${p => p.$active ? '#A89B87' : '#4A3F35'};
+  cursor: ${p => p.$active ? 'pointer' : 'default'};
+  display: flex;
+  align-items: center;
+  transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+  opacity: ${p => p.$active ? 1 : 0.35};
+
   svg {
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-    
-    &:hover { 
-      color: #B8935A; 
-      transform: translateY(-4px); 
+    &:hover {
+      color: ${p => p.$active ? '#B8935A' : 'inherit'};
+      transform: ${p => p.$active ? 'translateY(-4px)' : 'none'};
     }
   }
 `;

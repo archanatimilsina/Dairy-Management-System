@@ -84,7 +84,7 @@ const Products = () => {
       setProducts(prev => [enrichedProduct, ...prev]);
       setFormData({
         name: "",
-        category: categories.length > 0 ? categories[0].id : "",  // ← real ID
+        category: categories.length > 0 ? categories[0].id : "", 
         price: "",
         unit: "",
         stock: "",

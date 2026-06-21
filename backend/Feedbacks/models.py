@@ -10,7 +10,7 @@ class Feedback(models.Model):
         ('SUGGESTION', 'General Suggestion'),
         ('OTHER', 'Other'),
     ]
-    full_name=models.CharField(max_length=200)
+    username=models.CharField(max_length=200)
     email=models.EmailField(max_length=200)
     feedback=models.TextField(max_length=1000)
     created_at=models.DateTimeField(auto_now_add=True)

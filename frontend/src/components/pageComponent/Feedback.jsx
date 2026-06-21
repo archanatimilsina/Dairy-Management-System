@@ -22,20 +22,20 @@ const Feedback = () => {
   const { post } = useApi();
   const navigate = useNavigate();
   const [feedback, setFeedback] = useState({
-    full_name: localStorage.getItem('first_name') + " " + localStorage.getItem("last_name"),
+    username: localStorage.getItem('username'),
     email: localStorage.getItem('email'),
-    category: 'product',
-    message: '',
+    feedback_topic: 'PRODUCT',
+    feedback: '',
   });
 
   const [submitted, setSubmitted] = useState(false);
 
   const categories = [
-    { id: 'product', label: 'Product Quality', icon: <Package size={18} /> },
-    { id: 'delivery', label: 'Delivery Service', icon: <Truck size={18} /> },
-    { id: 'price', label: 'Pricing/Value', icon: <Star size={18} /> },
-    { id: 'suggestion', label: 'New Suggestion', icon: <Lightbulb size={18} /> },
-    { id: 'other', label: 'Other', icon: <HelpCircle size={18} /> },
+    { id: 'PRODUCT', label: 'Product Quality', icon: <Package size={18} /> },
+    { id: 'DELIVERY', label: 'Delivery Service', icon: <Truck size={18} /> },
+    { id: 'PRICE', label: 'Pricing/Value', icon: <Star size={18} /> },
+    { id: 'SUGGESTION', label: 'New Suggestion', icon: <Lightbulb size={18} /> },
+    { id: 'OTHER', label: 'Other', icon: <HelpCircle size={18} /> },
   ];
 
   const handleSubmit = async (e) => {
@@ -108,8 +108,8 @@ const Feedback = () => {
               rows="5"
               placeholder="Tell us about your experience in detail..."
               required
-              value={feedback.message}
-              onChange={(e) => setFeedback({...feedback, message: e.target.value})}
+              value={feedback.feedback}
+              onChange={(e) => setFeedback({...feedback, feedback: e.target.value})}
             />
           </InputGroup>
 

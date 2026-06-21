@@ -50,6 +50,8 @@ const RegisterPage = () => {
       localStorage.setItem('refresh_token', result.data.refresh);
       localStorage.setItem('username', result.data.user.username);
       localStorage.setItem('IsLoggedIn', 'true');
+      // localStorage.setItem('name',result.data.user.first_name);
+      // localStorage.setItem('surname',result.data.user.last_name);
       navigate('/');
     }
   };

@@ -16,6 +16,7 @@ const Feedbacks = () => {
     const fetchData = async () => {
       const result = await get('feedback/listCreate/');
       if (result.success) {
+        console.log(result.data)
         setFeedbacks(result.data);
         if (result.data.length > 0) setSelectedId(result.data[0].id);
       }
@@ -24,7 +25,7 @@ const Feedbacks = () => {
   }, [get]);
 
   const filteredFeedbacks = feedbacks.filter(f => 
-    f.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    f.username?.toLowerCase().includes(searchTerm.toLowerCase()) || 
     f.feedback_topic?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -59,10 +60,10 @@ const Feedbacks = () => {
               onClick={() => setSelectedId(fb.id)}
             >
               <div className="item-main">
-                <Avatar>{fb.full_name.charAt(0)}</Avatar>
+                <Avatar>{fb.username.charAt(0)}</Avatar>
                 <div className="item-content">
                   <div className="item-top">
-                    <span className="name">{fb.full_name}</span>
+                    <span className="name">{fb.username}</span>
                     <span className="date">{new Date(fb.created_at).toLocaleDateString()}</span>
                   </div>
                   <p className="preview">{fb.feedback}</p>
@@ -77,9 +78,9 @@ const Feedbacks = () => {
             <DetailContent>
               <DetailHeader>
                 <div className="user-profile">
-                  <LargeAvatar>{activeFeedback.full_name.charAt(0)}</LargeAvatar>
+                  <LargeAvatar>{activeFeedback.username.charAt(0)}</LargeAvatar>
                   <div className="user-meta">
-                    <h3>{activeFeedback.full_name}</h3>
+                    <h3>{activeFeedback.username}</h3>
                     <span><Mail size={12}/> {activeFeedback.email}</span>
                   </div>
                 </div>
