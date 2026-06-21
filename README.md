@@ -4,6 +4,11 @@ Elsa Dairy is a premium, end-to-end e-commerce and supply chain management ecosy
 
 ---
 
+## 🔗 Live Demo
+
+> 🌐 **Try it live →** [dairy-management-system-rho.vercel.app](https://dairy-management-system-rho.vercel.app/)
+
+---
 
 ## 🛠️ Tools & Technologies
 * **Frontend Single Page Architecture:** React.js, Vite, Styled-Components, Framer Motion, React Icons
@@ -22,16 +27,13 @@ npm install
 npm run dev
 ```
 
-
 ```bash
 cd backend
 source .venv/bin/activate  # for mac
 # On Windows use: .venv\Scripts\activate
-
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
-
 ```
 
 # 🖼️ Project Gallery
@@ -61,7 +63,6 @@ python manage.py runserver
 
 # Customer Feedback Terminal
 ![Customer Feedback Terminal](assets/Feedbackpage.png)
-
 
 ---
 
@@ -104,14 +105,12 @@ An administrative messaging system using custom template parsers to distribute p
 # Company Details Page
 ![Company Detail](assets/companydetail.png)
 
-#Product Category Report Page
+# Product Category Report Page
 ![Category Configuration Engine](assets/categoryadmin.png)
 
 # Delivery Report
 ![Delivery report](assets/DeliveryReport.png)
 
-
 ![Order using three way](assets/buyesewa.png)
-
 
 ---
