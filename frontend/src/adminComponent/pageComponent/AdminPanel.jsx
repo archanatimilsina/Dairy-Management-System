@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import { useLogout } from '../../hooks/useLogout';
 import OrderReport from './OrderReport';
 import DeliveryReport from './DeliveryReport';
 import Products from './Products';
@@ -19,6 +20,8 @@ import {
 
 const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState('orders');
+  const adminName = localStorage.getItem("username") || 'Administrator';
+  const logout = useLogout();
 
   const menuOptions = [
     { id: 'orders', label: 'Order Report', icon: <ShoppingCart size={20} /> },
@@ -69,7 +72,7 @@ const AdminPanel = () => {
         </MenuSection>
 
         <FooterSection>
-          <button className="logout-btn">
+          <button className="logout-btn" onClick={logout}>
             <LogOut size={18} />
             <span>Logout</span>
           </button>
@@ -81,10 +84,10 @@ const AdminPanel = () => {
           <h2>{menuOptions.find(m => m.id === activeTab)?.label}</h2>
           <div className="user-profile">
             <div className="admin-info">
-              <span className="name">Archana</span>
+              <span className="name">{adminName}</span>
               <span className="role">Administrator</span>
             </div>
-            <div className="avatar">A</div>
+            <div className="avatar">{adminName.charAt(0).toUpperCase()}</div>
           </div>
         </Header>
         

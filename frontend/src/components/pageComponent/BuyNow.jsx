@@ -4,8 +4,9 @@ import {
   ArrowLeft, Phone, Mail, CheckCircle2, 
   Landmark, Wallet, Copy 
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import useApi from '../../hooks/useApi';
 
 const LocalStyle = createGlobalStyle`
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@600;700;800&display=swap');
@@ -20,15 +21,79 @@ const LocalStyle = createGlobalStyle`
 const Checkout = () => {
   const [method, setMethod] = useState('esewa'); 
   const [isOrdered, setIsOrdered] = useState(false);
+  const [placedOrder, setPlacedOrder] = useState(null);
+  const [orderError, setOrderError] = useState('');
+  const [placing, setPlacing] = useState(false);
   const navigate = useNavigate();
+  const navLocation = useLocation();
+  const { post, del } = useApi();
 
-  const orderDetails = {
-    id: "ED-10294",
-    amount: 1340,
-  };
+  const cartState = navLocation.state || {};
+  const selectedItems = cartState.selectedItems || [];
+  const subtotal = cartState.subtotal ?? 0;
+  const deliveryFee = cartState.deliveryFee ?? 0;
+  const total = cartState.total ?? (subtotal + deliveryFee);
 
-  const handlePlaceOrder = () => {
-    setIsOrdered(true);
+  const username = localStorage.getItem('username') || '';
+  const email = localStorage.getItem('email') || '';
+  const [location, setLocation] = useState('');
+  const [contactNumber, setContactNumber] = useState('');
+
+  const handlePlaceOrder = async () => {
+    if (placing) return;
+    if (selectedItems.length === 0) {
+      setOrderError('Your cart is empty. Add something before checking out.');
+      return;
+    }
+    if (!email) {
+      setOrderError('No email address is stored for your account, so we cannot confirm the order.');
+      return;
+    }
+    if (!location.trim() || !contactNumber.trim()) {
+      setOrderError('Please enter your delivery location and contact number.');
+      return;
+    }
+
+    setPlacing(true);
+    setOrderError('');
+
+    const payload = {
+      full_name: username,
+      email: email,
+      contact_number: contactNumber.trim(),
+      location: location.trim(),
+      order_type: method === 'esewa' ? 'eSewa' : 'Cash',
+      delivery_status: 'pending',
+      order_status: 'pending',
+      total_amount: total,
+      delivery_fee: deliveryFee,
+      items: selectedItems.map(item => ({
+        product: item.product,
+        product_name: item.product_name,
+        quantity: item.quantity ?? 1,
+        unit: item.unit || '',
+        price_at_purchase: item.price,
+        subtotal: Number(item.price) * (item.quantity ?? 1)
+      }))
+    };
+
+    const result = await post('order/listCreate/', payload);
+    setPlacing(false);
+
+    if (result.success) {
+      setPlacedOrder({ id: result.data.id, amount: total });
+      setIsOrdered(true);
+      selectedItems.forEach(item => {
+        del(`product/cart/detail/${item.id}/`).catch(() => {});
+      });
+    } else {
+      const err = result.error;
+      setOrderError(
+        typeof err === 'object'
+          ? Object.values(err).flat().join(' ')
+          : (err || 'Could not place your order. Please try again.')
+      );
+    }
   };
 
   if (isOrdered) {
@@ -44,9 +109,9 @@ const Checkout = () => {
             <CheckCircle2 size={56} color="#B8935A" strokeWidth={1.5} />
           </div>
           <h2>Order Placed Successfully!</h2>
-          <p className="order-id">Order ID: <strong>{orderDetails.id}</strong></p>
+          <p className="order-id">Order ID: <strong>ORD-{placedOrder?.id ?? '—'}</strong></p>
           <p className="desc">Your payment method ({method.toUpperCase()}) has been recorded for transparency.</p>
-          <button onClick={() => window.location.href = '/'}>Back to Home</button>
+          <button onClick={() => navigate('/')}>Back to Home</button>
         </SuccessScreen>
       </SuccessWrapper>
     );
@@ -61,7 +126,7 @@ const Checkout = () => {
             <ArrowLeft size={18} /> Back
           </button>
           <h2>Select Payment Method</h2>
-          <p>Total Amount: <strong>Rs. {orderDetails.amount}</strong></p>
+          <p>Total Amount: <strong>Rs. {total}</strong></p>
         </Header>
 
         <MainGrid>
@@ -167,8 +232,31 @@ const Checkout = () => {
               )}
             </AnimatePresence>
 
-            <ConfirmBtn onClick={handlePlaceOrder}>
-              Place Order (Rs. {orderDetails.amount})
+            {orderError && <OrderError>{orderError}</OrderError>}
+
+            <DeliveryFields>
+              <FieldGroup>
+                <FieldLabel>Delivery location</FieldLabel>
+                <FieldInput
+                  type="text"
+                  placeholder="e.g. Baneshwor, Kathmandu"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                />
+              </FieldGroup>
+              <FieldGroup>
+                <FieldLabel>Contact number</FieldLabel>
+                <FieldInput
+                  type="text"
+                  placeholder="e.g. 9801234567"
+                  value={contactNumber}
+                  onChange={(e) => setContactNumber(e.target.value)}
+                />
+              </FieldGroup>
+            </DeliveryFields>
+
+            <ConfirmBtn onClick={handlePlaceOrder} disabled={placing}>
+              {placing ? 'Placing order...' : `Place Order (Rs. ${total})`}
             </ConfirmBtn>
           </InstructionSection>
         </MainGrid>
@@ -309,6 +397,52 @@ const MethodCard = styled.div`
   &:hover {
     border-color: ${props => props.$active ? '#2A1F10' : '#B8935A'};
   }
+`;
+
+const OrderError = styled.div`
+  background: #FFF5F5;
+  color: #C53030;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #FEB2B2;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+  margin-bottom: 12px;
+`;
+
+const DeliveryFields = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 14px;
+  text-align: left;
+  @media (max-width: 640px) { grid-template-columns: 1fr; }
+`;
+
+const FieldGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const FieldLabel = styled.label`
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6B5C4A;
+`;
+
+const FieldInput = styled.input`
+  padding: 12px 14px;
+  border: 1px solid #D8CFBE;
+  border-radius: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  outline: none;
+  box-sizing: border-box;
+  &:focus { border-color: #2A1F10; }
 `;
 
 const InstructionSection = styled.div`

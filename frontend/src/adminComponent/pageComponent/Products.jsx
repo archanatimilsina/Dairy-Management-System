@@ -7,17 +7,28 @@ import {
 import useApi from '../../hooks/useApi';
 
 const Products = () => {
-  const { post, get, loading } = useApi();
+  const { post, get, patch, del, loading } = useApi();
   
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("All");
   const [imagePreview, setImagePreview] = useState(null);
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState(["All"]);
+  const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     category: "",
+    price: "",
+    unit: "",
+    stock: "",
+    description: "",
+    picture_src: null
+  });
+
+  const emptyForm = () => ({
+    name: "",
+    category: categories.length > 0 ? categories[0].id : "",
     price: "",
     unit: "",
     stock: "",
@@ -32,8 +43,9 @@ const Products = () => {
       const product = await get("product/listCreate/");
       if(category.success && product.success)
       {
-        setProducts(product.data.results);
-        setCategories(category.data)
+        setProducts(product.data.results || []);
+        setCategories(category.data || []);
+        setFormData(prev => ({ ...prev, category: category.data?.[0]?.id ?? "" }));
       }
 
     }
@@ -72,7 +84,12 @@ const Products = () => {
     if (formData.picture_src) {
       data.append('picture_src', formData.picture_src); 
     }
-    const result = await post("product/listCreate/", data);
+
+    const isEditing = editingId !== null;
+    const result = isEditing
+      ? await patch(`product/detail/${editingId}/`, data)
+      : await post("product/listCreate/", data);
+
     if (result.success) {
       const matchedCategory = categories.find(
         c => String(c.id) === String(result.data.category)
@@ -81,21 +98,41 @@ const Products = () => {
         ...result.data,
         category_name: result.data.category_name || matchedCategory?.name || ""
       };
-      setProducts(prev => [enrichedProduct, ...prev]);
-      setFormData({
-        name: "",
-        category: categories.length > 0 ? categories[0].id : "", 
-        price: "",
-        unit: "",
-        stock: "",
-        description: "",
-        picture_src: null
-      });
+      setProducts(prev => isEditing
+        ? prev.map(p => p.id === editingId ? { ...p, ...enrichedProduct } : p)
+        : [enrichedProduct, ...prev]
+      );
+      setFormData(emptyForm());
       if (imagePreview) URL.revokeObjectURL(imagePreview);
       setImagePreview(null);
       setShowForm(false);
+      setEditingId(null);
     }
   };
+
+  const handleEdit = (product) => {
+    setEditingId(product.id);
+    setFormData({
+      name: product.product_name || "",
+      category: product.category ?? "",
+      price: product.price ?? "",
+      unit: product.unit ?? "",
+      stock: product.stock ?? "",
+      description: product.description || "",
+      picture_src: null
+    });
+    setImagePreview(product.picture_src || null);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (product) => {
+    if (!window.confirm(`Delete "${product.product_name}"? This cannot be undone.`)) return;
+    const result = await del(`product/detail/${product.id}/`);
+    if (result.success) {
+      setProducts(prev => prev.filter(p => p.id !== product.id));
+    }
+  };
+
 const filteredProducts = products.filter(p => {
   const matchesSearch = p.product_name?.toLowerCase().includes(searchTerm.toLowerCase());
   const matchesTab = activeTab === "All" || (p.category_name || "").toLowerCase() === activeTab.toLowerCase();
@@ -158,8 +195,8 @@ const filteredProducts = products.filter(p => {
                   </StockStatus>
               </div>
               <div className="col-actions">
-                <IconButton title="Edit"><Edit3 size={18}/></IconButton>
-                <IconButton className="del" title="Delete"><Trash2 size={18}/></IconButton>
+                <IconButton title="Edit" onClick={() => handleEdit(product)}><Edit3 size={18}/></IconButton>
+                <IconButton className="del" title="Delete" onClick={() => handleDelete(product)}><Trash2 size={18}/></IconButton>
               </div>
             </TableRow>
           ))

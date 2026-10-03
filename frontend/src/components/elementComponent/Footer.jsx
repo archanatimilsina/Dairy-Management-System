@@ -23,7 +23,7 @@ const FooterSection = () => {
   useEffect(() => {
     const fetchCompany = async () => {
       const result = await get('company-info/');
-      if (result.success) setCompany(result.data);
+      if (result.success) setCompany(result.data?.data || {});
     };
     fetchCompany();
   }, [get]);
@@ -81,15 +81,15 @@ const FooterSection = () => {
         <LinksGrid>
           <div className="link-column">
             <h4>Explore</h4>
-            <span onClick={() => navigate("/AboutUs")}>Our Story</span>
-            <span onClick={() => navigate("/facescanpage")}>Products</span>
+            <span onClick={() => navigate("/")}>Home</span>
+            <span onClick={() => navigate("/products")}>Products</span>
           </div>
 
           <div className="link-column">
             <h4>Support</h4>
-            <span onClick={() => navigate("/brandContact")}>Contact Us</span>
+            <span onClick={() => navigate("/contactUs")}>Contact Us</span>
             <span onClick={() => navigate("/feedback")}>Feedback</span>
-            <span onClick={() => navigate("/datafillup")}>Services</span>
+            <span onClick={() => navigate("/profile")}>My Profile</span>
           </div>
         </LinksGrid>
       </div>

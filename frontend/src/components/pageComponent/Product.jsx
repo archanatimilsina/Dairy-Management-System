@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import styled, { createGlobalStyle } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../elementComponent/Navbar';
-import FooterSection from '../elementComponent/Footer';
 import useApi from '../../hooks/useApi';
 import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiShoppingBag, FiCheckCircle, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
@@ -34,8 +33,8 @@ const PAGE_SIZE = 20;
 
       if (result.success) 
       {
-        setProducts(result.data.results);
-        setTotalPages(Math.ceil(result.data.count / PAGE_SIZE));
+        setProducts(result.data.results || []);
+        setTotalPages(Math.ceil((result.data.count || 0) / PAGE_SIZE));
       }
       if (categoriesRes.success && Array.isArray(categoriesRes.data)) {
         const backendCatNames = categoriesRes.data.map(cat => cat.name);
@@ -43,12 +42,35 @@ const PAGE_SIZE = 20;
       }
     };
     const fetchCartItems = async () => {
+      if (!localStorage.getItem("IsLoggedIn")) {
+        setCartItems([]);
+        return;
+      }
       const result = await get('product/cart/listCreate/');
-      if (result.success) setCartItems(result.data);
+      if (result.success) setCartItems(result.data || []);
     };
     fetchProducts();
     fetchCartItems();
   }, [get, currentPage]);
+
+  const buyNow = async (product) => {
+    if (!localStorage.getItem("IsLoggedIn")) {
+      navigate('/loginPage');
+      return;
+    }
+    const result = await post('product/cart/listCreate/', { product: product.id });
+    if (result.success) {
+      const cartRow = result.data;
+      navigate('/buyPage', {
+        state: {
+          selectedItems: [{ ...cartRow, quantity: cartRow.quantity ?? 1, selected: true }],
+          subtotal: Number(product.price),
+          deliveryFee: 100,
+          total: Number(product.price) + 100
+        }
+      });
+    }
+  };
 
   const isProductInCart = (productId) => {
     return cartItems.some(item => item.product === productId);
@@ -61,7 +83,7 @@ const PAGE_SIZE = 20;
     }
     const result = await post('product/cart/listCreate/', { product: productID });
     if (result.success) {
-      setCartItems([...cartItems, result.data]);
+      setCartItems(prev => [...prev, result.data]);
     }
   };
 
@@ -156,7 +178,8 @@ const PAGE_SIZE = 20;
                           <><FiShoppingBag /> Add</>
                         )}
                       </CartButton>
-                      <BuyNowButton whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      {/* Had no onClick, so the flagship CTA did nothing. */}
+                      <BuyNowButton whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => buyNow(product)}>
                         Buy Now
                       </BuyNowButton>
                     </ButtonGroup>
@@ -191,7 +214,6 @@ const PAGE_SIZE = 20;
           )}
         </ContentArea>
       </MainContainer>
-    <FooterSection />
     </PageWrapper>
   );
 };

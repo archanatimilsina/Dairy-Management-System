@@ -27,12 +27,19 @@ const ResetPasswordConfirm = () => {
     setLoading(true);
     setError('');
     const url = `reset-password-confirm/${uid}/${token}/`;
-    
+
     try {
       const result = await post(url, { password });
       if (result.success) {
         setCompleted(true);
         setTimeout(() => navigate('/loginPage'), 3000);
+      } else {
+        const detail = result.error;
+        setError(
+          typeof detail === 'object'
+            ? detail.error || detail.message || "This link is invalid or has expired. Please request a new one."
+            : (detail || "This link is invalid or has expired. Please request a new one.")
+        );
       }
     } catch (err) {
       console.error(err);

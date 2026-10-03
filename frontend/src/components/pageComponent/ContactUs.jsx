@@ -27,6 +27,7 @@ const Contact = () => {
   });
 
   const [status, setStatus] = useState('idle');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -38,14 +39,20 @@ const Contact = () => {
     setStatus('sending');
     
     const result = await post('contact/listCreate/', formData);
-    if(result.success) {
-      console.log("Contact Detail is sent");
+    if (!result.success) {
+      const err = result.error;
+      setStatus('error');
+      setErrorMessage(
+        typeof err === 'object'
+          ? Object.values(err).flat().join(' ')
+          : (err || 'Could not send your message. Please try again.')
+      );
+      return;
     }
     
-    setTimeout(() => {
-      setStatus('success');
-      setFormData({ full_name: '', email: '', subject: '', message: '' });
-    }, 1500);
+    setErrorMessage('');
+    setStatus('success');
+    setFormData({ full_name: '', email: '', subject: '', message: '' });
   };
 
   return (
@@ -154,6 +161,8 @@ const Contact = () => {
                     required
                   ></textarea>
                 </FormGroup>
+
+                {errorMessage && <ErrorBanner>{errorMessage}</ErrorBanner>}
 
                 <SubmitBtn type="submit" disabled={status === 'sending'}>
                   {status === 'sending' ? 'Sending Message...' : 'Send Message'}
@@ -291,6 +300,17 @@ const FormCard = styled.div`
   @media (max-width: 480px) {
     padding: 30px 20px;
   }
+`;
+
+const ErrorBanner = styled.div`
+  background: #FFF5F5;
+  color: #C53030;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #FEB2B2;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
 `;
 
 const FormGroup = styled.div`

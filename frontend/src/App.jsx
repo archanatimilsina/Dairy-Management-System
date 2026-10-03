@@ -28,7 +28,7 @@ function App() {
       <Routes>
         <Route path="/loginPage" element={<LoginPage />} />
         <Route path="/registerPage" element={<RegisterPage />} />
-        <Route path="/logout" element={<RegisterPage />} />
+        <Route path="/logout" element={<Navigate to="/loginPage" replace />} />
         <Route path="/forgotPassword" element={<ForgotPassword />} />
         <Route path="/reset-password/:uid/:token" element={<ResetPasswordConfirm />} />
 

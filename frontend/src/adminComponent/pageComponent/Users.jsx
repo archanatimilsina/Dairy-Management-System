@@ -21,9 +21,10 @@ const UsersReport = () => {
   const [users, setUsers] = useState([])
 
   const filteredUsers = users.filter(user => {
-    const name = user.first_name +" "+ user.last_name
+    const name = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+    const email = user.email || '';
     const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+                         email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = filterType === "all" ? true : user.user_type === filterType;
     return matchesSearch && matchesType;
   });
@@ -68,7 +69,7 @@ fetchData();
           <div className="icon regular"><Calendar size={20}/></div>
           <div className="data">
             <span>Regular (Subs)</span>
-            <h3>{users.filter(u => u.user_type === 'Regular').length}</h3>
+            <h3>{users.filter(u => u.user_type === 'regular').length}</h3>
           </div>
         </StatCard>
       </StatsRow>
@@ -90,15 +91,15 @@ fetchData();
             onClick={() => setFilterType('all')}
           >All</FilterBtn>
           <FilterBtn 
-            $active={filterType === 'Regular'} 
+            $active={filterType === 'regular'} 
             onClick={() => setFilterType('regular')}
           >Regular</FilterBtn>
           <FilterBtn 
-            $active={filterType === 'Visitor'} 
+            $active={filterType === 'visitor'} 
             onClick={() => setFilterType('visitor')}
           >Visitor</FilterBtn>
           <FilterBtn 
-            $active={filterType === 'Occasional'} 
+            $active={filterType === 'occasional'} 
             onClick={() => setFilterType('occasional')}
           >Occasional</FilterBtn>
         </ButtonGroup>
@@ -118,11 +119,11 @@ fetchData();
           </thead>
           <tbody>
             {filteredUsers.map(user => (
-              <tr key={user.id}>
+              <tr key={user.username}>
                 <td>
                   <UserCell>
-                    <div className="avatar">{user.first_name.charAt(0) || '?'}</div>
-                    <strong>{user.first_name + user.last_name}</strong>
+                    <div className="avatar">{(user.first_name || user.username || '?').charAt(0).toUpperCase()}</div>
+                    <strong>{`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username}</strong>
                   </UserCell>
                 </td>
                 <td>

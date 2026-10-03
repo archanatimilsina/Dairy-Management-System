@@ -19,7 +19,7 @@ const LocalStyle = createGlobalStyle`
 `;
 
 const Cart = () => {
-  const { get, del } = useApi();
+  const { get, patch, del } = useApi();
   const [cartItems, setCartItems] = useState([]);
   const navigate = useNavigate();
 
@@ -27,8 +27,8 @@ const Cart = () => {
     const fetchData = async () => {
       const result = await get('product/cart/listCreate/');
       if (result.success) {
-        console.log(result.data.results)
-        const initialData = result.data.map(item => ({
+        const rows = Array.isArray(result.data) ? result.data : (result.data?.results || []);
+        const initialData = rows.map(item => ({
           ...item,
           selected: true 
         }));
@@ -50,10 +50,19 @@ const Cart = () => {
     ));
   };
 
-  const updateQty = (id, delta) => {
-    setCartItems(prev => prev.map(item => 
-      item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
+  const updateQty = async (id, delta) => {
+    const target = cartItems.find(item => item.id === id);
+    if (!target) return;
+    const nextQty = Math.max(1, (target.quantity || 1) + delta);
+    setCartItems(prev => prev.map(item =>
+      item.id === id ? { ...item, quantity: nextQty } : item
     ));
+    const result = await patch(`product/cart/detail/${id}/`, { quantity: nextQty });
+    if (!result.success) {
+      setCartItems(prev => prev.map(item =>
+        item.id === id ? { ...item, quantity: target.quantity } : item
+      ));
+    }
   };
 
   const removeItem = async (id) => {
@@ -64,7 +73,7 @@ const Cart = () => {
   };
 
   const selectedItems = cartItems.filter(item => item.selected);
-  const subtotal = selectedItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const subtotal = selectedItems.reduce((acc, item) => acc + (Number(item.price) * (item.quantity || 1)), 0);
   const deliveryFee = subtotal > 0 ? 100 : 0;
   const total = subtotal + deliveryFee;
 

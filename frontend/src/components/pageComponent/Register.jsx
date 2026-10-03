@@ -28,6 +28,7 @@ const RegisterPage = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [serverError, setServerError] = useState('');
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -41,19 +42,22 @@ const RegisterPage = () => {
       return;
     }
     const result = await post('register/', formData);
-    console.log(result);
     if (!result.success) {
-      console.error("Registration error:", error);
+      const err = result.error;
+      setServerError(
+        typeof err === 'object'
+          ? Object.values(err).flat().join(' ')
+          : (err || 'Registration failed. Please try again.')
+      );
+      return;
     }
-    if (result.success) {
-      localStorage.setItem('access_token', result.data.access);
-      localStorage.setItem('refresh_token', result.data.refresh);
-      localStorage.setItem('username', result.data.user.username);
-      localStorage.setItem('IsLoggedIn', 'true');
-      // localStorage.setItem('name',result.data.user.first_name);
-      // localStorage.setItem('surname',result.data.user.last_name);
-      navigate('/');
-    }
+    setServerError('');
+    localStorage.setItem('access_token', result.data.access);
+    localStorage.setItem('refresh_token', result.data.refresh);
+    localStorage.setItem('username', result.data.user.username);
+    localStorage.setItem('email', result.data.user.email);
+    localStorage.setItem('IsLoggedIn', 'true');
+    navigate('/');
   };
 
   return (
@@ -172,6 +176,8 @@ const RegisterPage = () => {
             </div>
           </InputGroup>
 
+          {serverError && <ErrorBanner>{serverError}</ErrorBanner>}
+
           <SubmitBtn type="submit" disabled={loading}>
             {loading ? "Processing..." : <>Get Started <ArrowRight size={18} /></>}
           </SubmitBtn>
@@ -250,6 +256,18 @@ const FormContainer = styled.form`
   display: flex; 
   flex-direction: column; 
   gap: 20px;
+`;
+
+const ErrorBanner = styled.div`
+  background: #FFF5F5;
+  color: #C53030;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #FEB2B2;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+  line-height: 1.4;
 `;
 
 const FormRow = styled.div`

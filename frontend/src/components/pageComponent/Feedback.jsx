@@ -29,6 +29,7 @@ const Feedback = () => {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const categories = [
     { id: 'PRODUCT', label: 'Product Quality', icon: <Package size={18} /> },
@@ -41,10 +42,15 @@ const Feedback = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const result = await post('feedback/listCreate/', feedback);
-    if(result.success) {
-      console.log("feedback sent");
+    if (result.success) {
+      setSubmitted(true);
+    } else {
+      setSubmitError(
+        typeof result.error === 'object'
+          ? Object.values(result.error).flat().join(' ')
+          : (result.error || 'Could not send your feedback. Please try again.')
+      );
     }
-    setSubmitted(true);
   };
 
   if (submitted) {
@@ -90,8 +96,8 @@ const Feedback = () => {
             {categories.map((cat) => (
               <CategoryCard 
                 key={cat.id}
-                $active={feedback.category === cat.id}
-                onClick={() => setFeedback({...feedback, category: cat.id})}
+                $active={feedback.feedback_topic === cat.id}
+                onClick={() => setFeedback({...feedback, feedback_topic: cat.id})}
                 type="button"
                 whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.98 }}
@@ -114,6 +120,7 @@ const Feedback = () => {
           </InputGroup>
 
           <ButtonGroup>
+            {submitError && <SubmitError>{submitError}</SubmitError>}
             <SubmitButton type="submit">
               <Send size={16} /> Submit Feedback
             </SubmitButton>
@@ -282,6 +289,17 @@ const ButtonGroup = styled.div`
   display: flex; 
   flex-direction: column; 
   gap: 12px;
+`;
+
+const SubmitError = styled.div`
+  background: #FFF5F5;
+  color: #C53030;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #FEB2B2;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
 `;
 
 const SubmitButton = styled.button`

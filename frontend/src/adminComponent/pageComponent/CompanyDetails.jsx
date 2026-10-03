@@ -26,7 +26,7 @@ const CompanyDetails = () => {
     const fetchCompanyData = async () => {
       setLoading(true);
       const result = await get('company-info/');
-      if (result.success) setDetails(result.data);
+      if (result.success) setDetails(result.data?.data || {});
       setLoading(false);
     };
     fetchCompanyData();

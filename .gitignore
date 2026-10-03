@@ -46,3 +46,8 @@ __pycache__/
 .idea/
 *.swp
 *.swo
+
+# --- Local AI / prompt scratch files ---
+PROMPTS.md
+agentreport.md
+AGENTREPORT.md

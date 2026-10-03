@@ -19,4 +19,4 @@ class Feedback(models.Model):
     class Meta:
         ordering=['-created_at']
     def __str__(self):
-        return f"{self.full_name} -{self.feedback_topic}"
+        return f"{self.username} -{self.feedback_topic}"

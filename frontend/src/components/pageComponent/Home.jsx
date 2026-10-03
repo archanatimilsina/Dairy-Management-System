@@ -4,7 +4,6 @@ import styled, { createGlobalStyle } from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingCart, ArrowRight, ShieldCheck, Truck, Leaf, CheckCircle, Loader2, Droplets } from 'lucide-react';
 import Navbar from '../elementComponent/Navbar';
-import FooterSection from '../elementComponent/Footer';
 import useApi from '../../hooks/useApi';
 import DairyImage from '../../../public/Dairy.jpg'
 
@@ -56,7 +55,7 @@ if (categoriesRes.success) {
   };
 
 const filteredProducts = products.filter(p => 
-    activeCategory === "All" || p.category_name.toLowerCase() === activeCategory.toLowerCase()
+    activeCategory === "All" || (p.category_name || '').toLowerCase() === activeCategory.toLowerCase()
   );
 
   return (
@@ -95,7 +94,7 @@ const filteredProducts = products.filter(p =>
 
           {isLoading ? <LoadingState><Loader2 className="animate-spin" size={32} /></LoadingState> : (
             <ProductGrid>
-              {filteredProducts.filter(p => activeCategory === "All" || p.category_name === activeCategory).map(product => (
+              {filteredProducts.map(product => (
                 <ProductCard key={product.id}>
                   <div className="img-wrap"><img src={product.picture_src} alt={product.product_name} /></div>
                   <div className="info">
@@ -113,7 +112,6 @@ const filteredProducts = products.filter(p =>
           )}
         </Container>
       </ShopSection>
-      <FooterSection />
     </PageWrapper>
   );
 };
@@ -162,7 +160,9 @@ const ShopHeader = styled.div`display: flex; justify-content: space-between; ali
 const FilterBar = styled.div`display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px;`;
 const FilterChip = styled.button`
   padding: 8px 20px; border-radius: 20px; border: none; cursor: pointer;
-  background: ${props => props.active ? '#2A1F10' : '#EAE3D6'}; color: ${props => props.active ? '#FFF' : '#2A1F10'};
+     highlighted. styled-components strips the $ prefix from the DOM but still
+     forwards it to interpolations. */
+  background: ${props => props.$active ? '#2A1F10' : '#EAE3D6'}; color: ${props => props.$active ? '#FFF' : '#2A1F10'};
 `;
 
 const ProductGrid = styled.div`display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 30px;`;

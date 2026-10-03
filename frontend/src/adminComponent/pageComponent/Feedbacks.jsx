@@ -7,22 +7,59 @@ import {
 import useApi from '../../hooks/useApi';
 
 const Feedbacks = () => {
-  const { get } = useApi();
+  const { get, patch, del } = useApi();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedId, setSelectedId] = useState(null);
   const [feedbacks, setFeedbacks] = useState([]);
+  const [isReplying, setIsReplying] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       const result = await get('feedback/listCreate/');
       if (result.success) {
-        console.log(result.data)
-        setFeedbacks(result.data);
-        if (result.data.length > 0) setSelectedId(result.data[0].id);
+        setFeedbacks(result.data || []);
+        if ((result.data || []).length > 0) setSelectedId(result.data[0].id);
       }
     };
     fetchData();
   }, [get]);
+
+  const handleResolve = async (fb) => {
+    setBusy(true);
+    const next = !fb.is_reviewed;
+    const result = await patch(`feedback/detail/${fb.id}`, { is_reviewed: next });
+    setBusy(false);
+    if (result.success) {
+      setFeedbacks(prev => prev.map(f => f.id === fb.id ? { ...f, is_reviewed: next } : f));
+    }
+  };
+
+  const handleDelete = async (fb) => {
+    if (!window.confirm('Delete this feedback entry?')) return;
+    setBusy(true);
+    const result = await del(`feedback/detail/${fb.id}`);
+    setBusy(false);
+    if (result.success) {
+      const remaining = feedbacks.filter(f => f.id !== fb.id);
+      setFeedbacks(remaining);
+      if (selectedId === fb.id) setSelectedId(remaining[0]?.id ?? null);
+    }
+  };
+
+  const handleSendReply = async (fb) => {
+    if (!replyText.trim()) return;
+    setBusy(true);
+    const result = await patch(`feedback/detail/${fb.id}`, { is_reviewed: true });
+    setBusy(false);
+    if (result.success) {
+      setFeedbacks(prev => prev.map(f => f.id === fb.id ? { ...f, is_reviewed: true } : f));
+      setReplyText('');
+      setIsReplying(false);
+      window.alert('Feedback marked as resolved. Storing reply text needs a reply field on the Feedback model.');
+    }
+  };
 
   const filteredFeedbacks = feedbacks.filter(f => 
     f.username?.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -78,7 +115,7 @@ const Feedbacks = () => {
             <DetailContent>
               <DetailHeader>
                 <div className="user-profile">
-                  <LargeAvatar>{activeFeedback.username.charAt(0)}</LargeAvatar>
+                  <LargeAvatar>{(activeFeedback.username || '?').charAt(0).toUpperCase()}</LargeAvatar>
                   <div className="user-meta">
                     <h3>{activeFeedback.username}</h3>
                     <span><Mail size={12}/> {activeFeedback.email}</span>
@@ -92,11 +129,26 @@ const Feedbacks = () => {
               </MessageBody>
 
               <ActionFooter>
-                <div className="primary-actions">
-                  <button className="btn-reply"><Reply size={16}/> Reply</button>
-                  <button className="btn-resolve"><CheckCircle2 size={16}/> Resolve</button>
-                </div>
-                <button className="btn-delete"><Trash2 size={16}/></button>
+                {isReplying ? (
+                  <ReplyBox>
+                    <input
+                      type="text"
+                      placeholder="Write a reply..."
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                    />
+                    <button className="btn-resolve" disabled={busy} onClick={() => handleSendReply(activeFeedback)}>Send</button>
+                    <button className="btn-reply" onClick={() => setIsReplying(false)}>Cancel</button>
+                  </ReplyBox>
+                ) : (
+                  <div className="primary-actions">
+                    <button className="btn-reply" onClick={() => setIsReplying(true)}><Reply size={16}/> Reply</button>
+                    <button className="btn-resolve" disabled={busy} onClick={() => handleResolve(activeFeedback)}>
+                      <CheckCircle2 size={16}/> {activeFeedback.is_reviewed ? 'Reopen' : 'Resolve'}
+                    </button>
+                  </div>
+                )}
+                <button className="btn-delete" disabled={busy} onClick={() => handleDelete(activeFeedback)}><Trash2 size={16}/></button>
               </ActionFooter>
             </DetailContent>
           ) : (
@@ -116,7 +168,8 @@ const FeedbackItem = styled.div` padding: 20px; border-bottom: 1px solid #F5F2EE
 const DetailView = styled.div` background: white; border-radius: 20px; border: 1px solid #EAE3D6; display: flex; flex-direction: column; `;
 const DetailContent = styled.div` padding: 40px; display: flex; flex-direction: column; height: 100%; `;
 const DetailHeader = styled.div` display: flex; justify-content: space-between; margin-bottom: 30px; .user-profile { display: flex; gap: 15px; align-items: center; } h3 { margin: 0; color: #2A1F10; } span { color: #B8935A; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; } `;
-const ActionFooter = styled.div` margin-top: auto; padding-top: 30px; border-top: 1px solid #F5F2EE; display: flex; justify-content: space-between; .primary-actions { display: flex; gap: 10px; } button { border: none; padding: 10px 20px; border-radius: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; } .btn-reply { background: #2A1F10; color: white; } .btn-resolve { background: #F5F2EE; color: #2A1F10; } .btn-delete { background: #FFF; color: #E74C3C; border: 1px solid #EAE3D6; } `;
+const ReplyBox = styled.div` display: flex; gap: 10px; flex: 1; input { flex: 1; padding: 10px 14px; border: 1px solid #D8CFBE; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; outline: none; &:focus { border-color: #2A1F10; } } `;
+const ActionFooter = styled.div` margin-top: auto; padding-top: 30px; border-top: 1px solid #F5F2EE; display: flex; justify-content: space-between; align-items: center; gap: 12px; .primary-actions { display: flex; gap: 10px; } button { border: none; padding: 10px 20px; border-radius: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; } button:disabled { opacity: 0.6; cursor: not-allowed; } .btn-reply { background: #2A1F10; color: white; } .btn-resolve { background: #F5F2EE; color: #2A1F10; } .btn-delete { background: #FFF; color: #E74C3C; border: 1px solid #EAE3D6; } `;
 const Avatar = styled.div` width: 40px; height: 40px; background: #F5F2EE; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #2A1F10; `;
 const LargeAvatar = styled(Avatar)` width: 50px; height: 50px; border-radius: 12px; `;
 const CategoryBadge = styled.span` background: #F5F2EE; color: #2A1F10; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; `;

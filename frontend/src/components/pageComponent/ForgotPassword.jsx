@@ -26,6 +26,15 @@ const ForgotPassword = () => {
     }
   };
 
+  const renderError = () => {
+    if (!error) return null;
+    if (typeof error === 'string') return error;
+    if (typeof error === 'object') {
+      return Object.values(error).flat().join(' ') || 'Something went wrong. Please try again.';
+    }
+    return 'Something went wrong. Please try again.';
+  };
+
   return (
     <AuthWrapper>
       <LocalStyle />
@@ -51,7 +60,7 @@ const ForgotPassword = () => {
                     />
                   </div>
                 </InputGroup>
-                {error && <ErrorMessage>{error}</ErrorMessage>}
+                {error && <ErrorMessage>{renderError()}</ErrorMessage>}
                 <SubmitBtn type="submit" disabled={loading}>
                   {loading ? "Sending link..." : "Send Reset Link"}
                 </SubmitBtn>

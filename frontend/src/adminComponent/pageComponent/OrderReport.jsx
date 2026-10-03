@@ -10,6 +10,7 @@ const OrdersReport = () => {
   const { get, post, patch } = useApi();
 
   const [filter, setFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRequestDrawerOpen, setIsRequestDrawerOpen] = useState(false);
   const [drawerTab, setDrawerTab] = useState('pending'); 
@@ -132,8 +133,15 @@ const OrdersReport = () => {
 
   const pendingRequestsCount = pendingOrders.filter(o => o.order_status === 'pending').length;
   const filteredOrders = acceptedOrders.filter(o => {
-    if (filter === 'all') return true;
-    return o.order_type === filter;
+    if (filter !== 'all' && o.order_type !== filter) return false;
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      (o.full_name || '').toLowerCase().includes(term) ||
+      (o.email || '').toLowerCase().includes(term) ||
+      String(o.id).includes(term) ||
+      (o.location || '').toLowerCase().includes(term)
+    );
   });
 
   const displayRequestOrders = drawerTab === 'pending' ? pendingOrders : rejectedOrders;
@@ -162,7 +170,7 @@ const OrdersReport = () => {
           <button className={filter === 'Physical' ? 'active' : ''} onClick={() => setFilter('Physical')}><Wallet size={14}/> Cash</button>
           <button className={filter === 'eSewa' ? 'active' : ''} onClick={() => setFilter('eSewa')}><Smartphone size={14}/> eSewa</button>
         </FilterBar>
-        <SearchBar><Search size={16} /><input type="text" placeholder="Search orders..." /></SearchBar>
+        <SearchBar><Search size={16} /><input type="text" placeholder="Search orders..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></SearchBar>
       </ControlRow>
 
       <OrderGrid>

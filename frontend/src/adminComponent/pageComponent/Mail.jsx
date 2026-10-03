@@ -18,7 +18,7 @@ const SendMailPage = () => {
       const result = await get('user/listView/'); 
       if (result.success) {
         const options = result.data.map(user => ({
-          label: `${user.full_name} (${user.email})`,
+          label: `${`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username} (${user.email})`,
           value: user.email
         }));
         setUserOptions(options);

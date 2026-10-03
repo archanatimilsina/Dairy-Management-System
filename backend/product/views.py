@@ -3,20 +3,13 @@ from .models import Product, Cart, Category
 from rest_framework import generics
 from .serializers import ProductSerializer, CartSerializer, CategorySerializer
 from rest_framework.pagination import PageNumberPagination
-from supabase import create_client
-import os
-import uuid
+from rest_framework.permissions import IsAuthenticated
 
-supabase = create_client(
-    os.environ.get('SUPABASE_URL'),
-    os.environ.get('SUPABASE_KEY')
-)
 
 class ProductPagination(PageNumberPagination):
-   page_size= 20
-   page_sixe_query_param = 'page_size'
-   max_page_size = '100'
-   
+   page_size = 20
+   page_size_query_param = 'page_size'
+   max_page_size = 100
 
 
 class ProductListCreateView(generics.ListCreateAPIView):
@@ -30,14 +23,25 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class CartListCreateView(generics.ListCreateAPIView):
-   queryset = Cart.objects.all()
    serializer_class = CartSerializer
+   permission_classes = [IsAuthenticated]
+
+   def get_queryset(self):
+      return (Cart.objects
+              .filter(user=self.request.user)
+              .select_related('product', 'product__category', 'user'))
+
    def perform_create(self, serializer):
-      serializer.save(user= self.request.user)
+      serializer.save(user=self.request.user)
 
 class CartDetailView(generics.RetrieveUpdateDestroyAPIView):
-   queryset = Cart.objects.all()
    serializer_class = CartSerializer
+   permission_classes = [IsAuthenticated]
+
+   def get_queryset(self):
+      return (Cart.objects
+              .filter(user=self.request.user)
+              .select_related('product', 'product__category', 'user'))
    
 
 class CategoryListCreateView(generics.ListCreateAPIView):

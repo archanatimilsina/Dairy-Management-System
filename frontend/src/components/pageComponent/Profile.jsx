@@ -21,7 +21,7 @@ useEffect(() => {
 
         setData({
             user: uRes?.success ? uRes.data : null,
-            orders: oRes?.success ? (oRes.data || []) : [] 
+            orders: oRes?.success ? (oRes.data?.data || []) : []
         });
     } catch (err) {
         console.error("Fetch Error:", err);
