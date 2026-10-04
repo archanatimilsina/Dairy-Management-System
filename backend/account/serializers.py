@@ -14,8 +14,9 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self,validated_data):
         contact = validated_data.pop('contact')
         user = User.objects.create_user(**validated_data)
-        user.profile.contact = contact
-        user.profile.save()
+        # create_user fires the post_save receiver that already made the Profile;
+        # set contact with a single UPDATE instead of refetching and re-saving.
+        Profile.objects.filter(user=user).update(contact=contact)
         return user
     
 

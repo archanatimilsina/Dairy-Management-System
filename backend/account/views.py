@@ -3,7 +3,6 @@ from django.contrib.auth.models import User
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import authenticate
 from django.conf import settings
 from order.serializers import OrderSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -19,6 +18,11 @@ from rest_framework import generics
 from .models import CompanyConfiguration
 
 class RegisterView(APIView):
+    # No JWT parsing here: DRF authenticates before checking permissions, so an
+    # expired/garbage Authorization header would otherwise turn every signup
+    # attempt into a 401 `token_not_valid`.
+    authentication_classes = []
+
     def post(self, request):
        serializer = RegisterSerializer(data= request.data)
        if serializer.is_valid():
@@ -35,42 +39,60 @@ class RegisterView(APIView):
           return Response(data= serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(APIView):
+    # Same reason as RegisterView: a dead token must not be able to lock the
+    # user out of the login endpoint itself.
+    authentication_classes = []
+
     def post(self, request):
-       identifier= request.data.get('emailOrUsername')
+       identifier= (request.data.get('emailOrUsername') or '').strip()
        password= request.data.get('password')
        if not identifier or not password:
             return Response({"error": "Both identifier and password are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+       # One query for the user, one password verification.
+       #
+       # The old version ran User.objects.get(email__iexact=...) and then handed
+       # the username to authenticate(), which fetched the very same row a
+       # second time. That doubled the DB round trips on the hottest endpoint.
+       user = None
        if "@" in identifier:
-            try:
-                user_obj = User.objects.get(email__iexact=identifier)
-                username = user_obj.username
-            except User.DoesNotExist:
-                return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
-            except User.MultipleObjectsReturned:
-                return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+            user = (User.objects
+                    .select_related('profile')
+                    .filter(email__iexact=identifier)
+                    .order_by('id')
+                    .first())
        else:
-            username = identifier
-       user = authenticate(username=username, password= password)
-       if user is not None:
-          Refresh= RefreshToken.for_user(user)
-          return Response({
-             'user':{
-                'id':user.id,
-                'username':user.username,
-                'email': user.email
+            user = (User.objects
+                    .select_related('profile')
+                    .filter(username=identifier)
+                    .first())
+
+       # is_active mirrors ModelBackend.user_can_authenticate, so deactivated
+       # accounts keep failing exactly as before. last_login is deliberately not
+       # touched: this API never calls django.contrib.auth.login(), so Django 6
+       # never fired the user_logged_in signal here either.
+       if user is not None and user.is_active and user.check_password(password):
+           refresh= RefreshToken.for_user(user)
+           return Response({
+              'user':{
+                 'id':user.id,
+                 'username':user.username,
+                 'email': user.email
                     },
-             'access':str(Refresh.access_token),
-             'refresh':str(Refresh)
-          }, status=status.HTTP_200_OK, 
-          )
+              'access':str(refresh.access_token),
+              'refresh':str(refresh)
+           }, status=status.HTTP_200_OK,
+           )
        else:
-          return Response(
-                {"error": "Invalid username or password"}, 
+           return Response(
+                {"error": "Invalid username or password"},
                 status=status.HTTP_401_UNAUTHORIZED
             )
           
 
 class LogoutView(APIView):
+  authentication_classes = []
+
   def post(self, request):
      try: 
         refresh= request.data.get('refresh_token')
@@ -86,6 +108,8 @@ class LogoutView(APIView):
 
 
 class PasswordResetView(APIView):
+  authentication_classes = []
+
   def post(self, request):
         email= request.data.get("email")
         if not email:
@@ -117,6 +141,8 @@ class PasswordResetView(APIView):
         
 
 class PasswordResetConfirmView(APIView):
+    authentication_classes = []
+
     def post(self,request,uidb64, token):
       try:
         uid= urlsafe_base64_decode(uidb64).decode()
@@ -206,15 +232,21 @@ class SendDirectMailView(APIView):
 
 
 class CompanyConfigurationView(APIView):  
-    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        # Read is public (footer / home page render it for signed-out visitors),
+        # writes are admin-only. This has to be resolved per request --
+        # assigning to self.permission_classes inside get() runs *after*
+        # DRF has already evaluated the permissions.
+        if self.request.method in ('GET', 'HEAD', 'OPTIONS'):
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
     def get_object(self):
         obj, created = CompanyConfiguration.objects.get_or_create(pk=1)
         return obj
 
     def get(self, request):
-        self.permission_classes = [AllowAny]
-        self.check_permissions(request)
         instance = self.get_object()
         serializer = CompanyConfigurationSerializer(instance)
         return Response({"success": True, "data": serializer.data})

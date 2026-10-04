@@ -24,7 +24,7 @@ class Order(models.Model):
     delivery_status = models.CharField(max_length=20, choices=DELIVERY_STATUS_CHOICES, default='pending')
     location = models.CharField(max_length=200)
     order_type = models.CharField(max_length=50, default="Physical") 
-    order_status= models.CharField(choices=ORDER_STATUS_CHOICES, default ="pending")
+    order_status= models.CharField(max_length=20, choices=ORDER_STATUS_CHOICES, default ="pending")
     admin_note = models.TextField(blank=True, null=True) 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

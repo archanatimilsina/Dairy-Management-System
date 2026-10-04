@@ -10,8 +10,8 @@ class Profile(models.Model):
         ('visitor',"Visitor")
     ]
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    contact = models.CharField(null=True, blank=True)
-    user_type = models.CharField(choices=user_type_choices,default='visitor')
+    contact = models.CharField(max_length=20, null=True, blank=True)
+    user_type = models.CharField(max_length=20, choices=user_type_choices, default='visitor')
     
 
 @receiver(post_save, sender=User)

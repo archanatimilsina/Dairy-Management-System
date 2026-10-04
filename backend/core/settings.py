@@ -5,16 +5,39 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
+from django.core.exceptions import ImproperlyConfigured
 import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if not DATABASE_URL:
+    raise ImproperlyConfigured(
+        'DATABASE_URL is not set. The app cannot serve a single DB-backed '
+        'endpoint without it (every request would return HTTP 500). '
+        'Set it in your host\'s environment, e.g. Render -> Environment.'
+    )
+
+if 'postgres' not in DATABASE_URL and 'sqlite' not in DATABASE_URL:
+    raise ImproperlyConfigured(
+        f'DATABASE_URL does not point at a Postgres database: {DATABASE_URL!r}'
+    )
+
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
+        default=DATABASE_URL,
         conn_max_age=600,
         conn_health_checks=True
     )
 }
+
+# psycopg2 will happily sit on a dead/unroutable host for the OS default
+# (minutes). Every auth request then hangs instead of failing, which is what
+# made /login/ and /register/ look "stuck" when the database was unreachable.
+if 'sqlite' not in DATABASES['default'].get('ENGINE', ''):
+    DATABASES['default'].setdefault('OPTIONS', {})
+    DATABASES['default']['OPTIONS'].setdefault('connect_timeout', 5)
+
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
@@ -132,6 +155,15 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
+
+# Django 6 defaults to PBKDF2-SHA256 with 1,200,000 iterations, which burns
+# ~700ms of CPU per login/register on a Render shared vCPU. 600,000 is still the
+# OWASP floor for PBKDF2-SHA256 and halves it. Password hashing is the single
+# biggest cost on the auth endpoints -- nothing else there is worth more than a
+# few ms.
+PASSWORD_HASHERS = [
+    'core.hashers.PBKDF2PasswordHasher600k',
+]
 
 AUTH_PASSWORD_VALIDATORS = [
     {
