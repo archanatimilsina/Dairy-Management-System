@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { Mail, Lock, ArrowRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import useApi from '../../hooks/useApi';
+import api, { friendlyAuthError } from '../../services/api';
 import { Link, useNavigate } from 'react-router-dom';
 
 
@@ -12,7 +13,17 @@ const LoginPage = () => {
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [waking, setWaking] = useState(false);
+  const wakeTimer = useRef(null);
   const navigate = useNavigate();
+
+  // Warm up the free-tier backend on page open (see Register.jsx).
+  useEffect(() => {
+    api.get('health/', { timeout: 15000 }).catch(() => {});
+    return () => {
+      if (wakeTimer.current) clearTimeout(wakeTimer.current);
+    };
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -20,7 +31,15 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = await post('login/', formData);
+    const emailOrUsername = (formData.emailOrUsername || '').trim();
+    const password = formData.password || '';
+    if (!emailOrUsername || !password) return;
+    setWaking(false);
+    if (wakeTimer.current) clearTimeout(wakeTimer.current);
+    wakeTimer.current = setTimeout(() => setWaking(true), 6000);
+    const result = await post('login/', { emailOrUsername, password }, { timeout: 60000 });
+    if (wakeTimer.current) clearTimeout(wakeTimer.current);
+    setWaking(false);
     if (result.success) {
       localStorage.setItem("email", result.data?.user.email);
       localStorage.setItem("username", result.data?.user.username);
@@ -34,11 +53,11 @@ const LoginPage = () => {
 
   const renderError = () => {
     if (!error) return null;
-    if (typeof error === 'string') return error;
-    if (typeof error === 'object') {
-      return Object.values(error).flat().join(' ');
+    const msg = friendlyAuthError(error, 'An unexpected error occurred.');
+    if (/timeout of|network error|failed to fetch/i.test(String(error?.message || error))) {
+      return `${msg} The server sleeps when idle on free hosting -- wait ~30 seconds and try again.`;
     }
-    return 'An unexpected error occurred.';
+    return msg;
   };
 
   return (
@@ -93,8 +112,12 @@ const LoginPage = () => {
             <Link to="/forgotPassword">Forgot Password?</Link>
           </FlexRow>
 
+          {waking && !error && (
+            <WakingHint>Server is waking up (free hosting sleeps when idle) — still trying, this can take up to a minute…</WakingHint>
+          )}
+
           <SubmitBtn disabled={loading}>
-            {loading ? 'Signing In...' : <>Sign In <ArrowRight size={18} /></>}
+            {loading ? (waking ? 'Waking server…' : 'Signing In...') : <>Sign In <ArrowRight size={18} /></>}
           </SubmitBtn>
         </FormContainer>
 
@@ -176,6 +199,18 @@ const ErrorBanner = styled.div`
   span {
     flex: 1;
   }
+`;
+
+const WakingHint = styled.div`
+  background: #FFFBEB;
+  color: #92400E;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #FDE68A;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+  line-height: 1.4;
 `;
 
 const InputGroup = styled.div`

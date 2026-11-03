@@ -1,13 +1,26 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { Mail, Lock, User, Phone, ArrowRight, Eye, EyeOff, AtSign } from 'lucide-react';
 import useApi from '../../hooks/useApi';
+import api, { friendlyAuthError } from '../../services/api';
 import { Link, useNavigate } from 'react-router-dom';
 
 
 const RegisterPage = () => {
-  const { loading, error, post } = useApi();
+  const { loading, post } = useApi();
   const navigate = useNavigate();
+  const wakeTimer = useRef(null);
+  const [waking, setWaking] = useState(false);
+
+  // Warm up the free-tier backend as soon as the page opens, so the actual
+  // signup POST usually hits an already-awake server instead of paying the
+  // 10-50s cold start inside the signup request itself.
+  useEffect(() => {
+    api.get('health/', { timeout: 15000 }).catch(() => {});
+    return () => {
+      if (wakeTimer.current) clearTimeout(wakeTimer.current);
+    };
+  }, []);
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -29,19 +42,67 @@ const RegisterPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (formData.password !== formData.confirm_password) {
-      alert("Passwords do not match");
+    const first_name = (formData.first_name || '').trim();
+    const last_name = (formData.last_name || '').trim();
+    const username = (formData.username || '').trim();
+    const email = (formData.email || '').trim().toLowerCase();
+    const contact = (formData.contact || '').trim();
+    const password = formData.password || '';
+    // Fail fast on the client instead of burning a 30-60s server round trip.
+    if (!first_name || !last_name) {
+      setServerError('Please enter your first and last name.');
       return;
     }
-    const result = await post('register/', formData);
+    if (username.length < 3) {
+      setServerError('Username must be at least 3 characters.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setServerError('Please enter a valid email address.');
+      return;
+    }
+    if (password.length < 8) {
+      setServerError('Password must be at least 8 characters.');
+      return;
+    }
+    if (password !== formData.confirm_password) {
+      setServerError('Passwords do not match.');
+      return;
+    }
+    if (contact && !/^[0-9+\-\s()]+$/.test(contact)) {
+      setServerError('Phone number may only contain digits, spaces, +, - or ().');
+      return;
+    }
+    setServerError('');
+    // If the request is still running after 6s, the backend was almost
+    // certainly asleep and is now cold-starting: tell the user instead of
+    // leaving "Processing..." with no explanation.
+    setWaking(false);
+    if (wakeTimer.current) clearTimeout(wakeTimer.current);
+    wakeTimer.current = setTimeout(() => setWaking(true), 6000);
+    const result = await post(
+      'register/',
+      { first_name, last_name, username, email, contact, password },
+      { timeout: 60000 }
+    );
+    if (wakeTimer.current) clearTimeout(wakeTimer.current);
+    setWaking(false);
     if (!result.success) {
-      const err = result.error;
-      setServerError(
-        typeof err === 'object'
-          ? Object.values(err).flat().join(' ')
-          : (err || 'Registration failed. Please try again.')
-      );
+      const msg =
+        result.friendly ||
+        friendlyAuthError(result.error, 'Registration failed. Please try again.');
+      // Edge case: the first attempt timed out client-side but actually
+      // created the account; the automatic retry then reports "already
+      // exists". Point the user at login instead of a dead end.
+      if (/already exists/i.test(msg)) {
+        setServerError(`${msg} Try logging in instead.`);
+      } else if (result.timeout || result.network) {
+        setServerError(
+          `${msg} The server sleeps when idle on free hosting -- wait ~30 seconds and try again.`
+        );
+      } else {
+        setServerError(msg);
+      }
       return;
     }
     setServerError('');
@@ -171,9 +232,12 @@ const RegisterPage = () => {
           </InputGroup>
 
           {serverError && <ErrorBanner>{serverError}</ErrorBanner>}
+          {waking && !serverError && (
+            <WakingHint>Server is waking up (free hosting sleeps when idle) — still trying, this can take up to a minute…</WakingHint>
+          )}
 
           <SubmitBtn type="submit" disabled={loading}>
-            {loading ? "Processing..." : <>Get Started <ArrowRight size={18} /></>}
+            {loading ? (waking ? "Waking server…" : "Processing...") : <>Get Started <ArrowRight size={18} /></>}
           </SubmitBtn>
         </FormContainer>
 
@@ -258,6 +322,18 @@ const ErrorBanner = styled.div`
   padding: 12px 14px;
   border-radius: 12px;
   border: 1px solid #FEB2B2;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+  line-height: 1.4;
+`;
+
+const WakingHint = styled.div`
+  background: #FFFBEB;
+  color: #92400E;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #FDE68A;
   font-size: 0.85rem;
   font-weight: 600;
   text-align: left;

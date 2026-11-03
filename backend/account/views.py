@@ -22,70 +22,80 @@ class RegisterView(APIView):
     # expired/garbage Authorization header would otherwise turn every signup
     # attempt into a 401 `token_not_valid`.
     authentication_classes = []
+    permission_classes = [AllowAny]
 
     def post(self, request):
-       serializer = RegisterSerializer(data= request.data)
-       if serializer.is_valid():
-         user= serializer.save()       
-         refresh = RefreshToken.for_user(user)
-         return Response({
-         'user': serializer.data,
-        'access': str(refresh.access_token),
-        'refresh': str(refresh),
-         },status=status.HTTP_201_CREATED)
-       
-       else:
-          print(serializer.errors)
-          return Response(data= serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+        serializer = RegisterSerializer(data=request.data)
+        if not serializer.is_valid():
+            print(serializer.errors)
+            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user = serializer.save()
+        except Exception:
+            # Race: two simultaneous signups with the same username/email pass
+            # validation, then one hits the DB unique constraint. Return a 400
+            # shaped like a validation error, not a 500.
+            import logging
+            logging.getLogger(__name__).exception("register save failed")
+            return Response(
+                {"username": ["A user with these credentials already exists."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'user': serializer.data,
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+        }, status=status.HTTP_201_CREATED)
 
 class LoginView(APIView):
     # Same reason as RegisterView: a dead token must not be able to lock the
     # user out of the login endpoint itself.
     authentication_classes = []
+    permission_classes = [AllowAny]
 
     def post(self, request):
-       identifier= (request.data.get('emailOrUsername') or '').strip()
-       password= request.data.get('password')
-       if not identifier or not password:
+        identifier = (request.data.get('emailOrUsername') or '').strip()
+        password = request.data.get('password')
+        if not identifier or not password:
             return Response({"error": "Both identifier and password are required"}, status=status.HTTP_400_BAD_REQUEST)
 
-       # One query for the user, one password verification.
-       #
-       # The old version ran User.objects.get(email__iexact=...) and then handed
-       # the username to authenticate(), which fetched the very same row a
-       # second time. That doubled the DB round trips on the hottest endpoint.
-       user = None
-       if "@" in identifier:
+        # One indexed query for the user, one password verification.
+        # No select_related('profile'): the login response never uses the
+        # profile, so the JOIN is pure waste. .only() keeps the row small on
+        # the Render -> Supabase WAN link.
+        user = None
+        if "@" in identifier:
             user = (User.objects
-                    .select_related('profile')
                     .filter(email__iexact=identifier)
+                    .only('id', 'username', 'email', 'password', 'is_active', 'is_staff')
                     .order_by('id')
                     .first())
-       else:
+        else:
             user = (User.objects
-                    .select_related('profile')
                     .filter(username=identifier)
+                    .only('id', 'username', 'email', 'password', 'is_active', 'is_staff')
                     .first())
 
-       # is_active mirrors ModelBackend.user_can_authenticate, so deactivated
-       # accounts keep failing exactly as before. last_login is deliberately not
-       # touched: this API never calls django.contrib.auth.login(), so Django 6
-       # never fired the user_logged_in signal here either.
-       if user is not None and user.is_active and user.check_password(password):
-           refresh= RefreshToken.for_user(user)
-           return Response({
-              'user':{
-                 'id':user.id,
-                 'username':user.username,
-                 'email': user.email,
-                 'is_staff': user.is_staff,
-                    },
-              'access':str(refresh.access_token),
-              'refresh':str(refresh)
+        # is_active mirrors ModelBackend.user_can_authenticate, so deactivated
+        # accounts keep failing exactly as before. last_login is deliberately not
+        # touched: this API never calls django.contrib.auth.login(), so Django 6
+        # never fired the user_logged_in signal here either.
+        if user is not None and user.is_active and user.check_password(password):
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'is_staff': user.is_staff,
+                },
+                'access': str(refresh.access_token),
+                'refresh': str(refresh)
            }, status=status.HTTP_200_OK,
            )
-       else:
-           return Response(
+        else:
+            return Response(
                 {"error": "Invalid username or password"},
                 status=status.HTTP_401_UNAUTHORIZED
             )
@@ -113,13 +123,13 @@ class PasswordResetView(APIView):
   def post(self, request):
         email= request.data.get("email")
         if not email:
-           return Response({"message":"If this email exists, a link has been sent"},status=status.HTTP_200_OK)
+            return Response({"message":"If this email exists, a link has been sent"},status=status.HTTP_200_OK)
         try:
            user = User.objects.get(email__iexact=email)
         except User.DoesNotExist:
-           return Response({"message":"If this email exists, a link has been sent"},status=status.HTTP_200_OK)
+            return Response({"message":"If this email exists, a link has been sent"},status=status.HTTP_200_OK)
         except User.MultipleObjectsReturned:
-           return Response({"message":"If this email exists, a link has been sent"},status=status.HTTP_200_OK)
+            return Response({"message":"If this email exists, a link has been sent"},status=status.HTTP_200_OK)
 
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)

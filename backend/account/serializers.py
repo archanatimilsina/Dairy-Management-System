@@ -1,7 +1,24 @@
 from django.contrib.auth.models import User
 
+from django.db import transaction
 from rest_framework import serializers
 from .models import CompanyConfiguration, Profile
+
+# Cache password validators at module level. Django's
+# get_default_password_validators() instantiates fresh validators on every
+# call -- CommonPasswordValidator re-reads + gunzips the ~20k common-password
+# list from disk each time. On a Render shared vCPU + ephemeral disk that is
+# pure waste on every /register/ request. One shared instance is thread-safe
+# for validation (read-only after init).
+_cached_password_validators = None
+
+
+def _get_password_validators():
+    global _cached_password_validators
+    if _cached_password_validators is None:
+        from django.contrib.auth.password_validation import get_default_password_validators
+        _cached_password_validators = get_default_password_validators()
+    return _cached_password_validators
 
 class RegisterSerializer(serializers.ModelSerializer):
     contact = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=20, default='')
@@ -26,7 +43,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate_password(self, value):
         from django.contrib.auth.password_validation import validate_password
-        validate_password(value)
+        validate_password(value, password_validators=_get_password_validators())
         return value
 
     def create(self, validated_data):
@@ -34,12 +51,22 @@ class RegisterSerializer(serializers.ModelSerializer):
         user_type = validated_data.pop('user_type', 'visitor') or 'visitor'
         if user_type not in ('regular', 'occasional', 'visitor'):
             user_type = 'visitor'
-        user = User.objects.create_user(**validated_data)
-        # create_user fires the post_save receiver that already made the Profile;
-        # update_or_create covers the race where the receiver has not run yet.
-        Profile.objects.update_or_create(
-            user=user, defaults={'contact': contact, 'user_type': user_type}
-        )
+        # One transaction, two writes: INSERT user (fires the post_save
+        # receiver that creates the Profile) + single UPDATE of that row.
+        # The old code did Profile.objects.update_or_create() here which is a
+        # SELECT + UPDATE (2 round trips to remote Postgres, ~150-300ms each
+        # from Render US -> Supabase). filter().update() is a single UPDATE,
+        # with a get_or_create fallback only for the signal-race edge case.
+        with transaction.atomic():
+            user = User.objects.create_user(**validated_data)
+            updated = Profile.objects.filter(user=user).update(
+                contact=contact, user_type=user_type
+            )
+            if not updated:
+                Profile.objects.get_or_create(
+                    user=user,
+                    defaults={'contact': contact, 'user_type': user_type},
+                )
         return user
 
 
@@ -91,10 +118,16 @@ class UserMeSerializer(serializers.ModelSerializer):
         read_only_fields = ('username', 'email', 'status', 'date_joined')
 
     def to_representation(self, instance):
-        profile, _ = Profile.objects.get_or_create(user=instance)
+        # The view select_related('profile'), so instance.profile is already
+        # cached -- no extra query. Only hit the DB to self-heal legacy rows
+        # created before the post_save signal existed.
+        try:
+            profile = instance.profile
+        except Exception:
+            profile, _ = Profile.objects.get_or_create(user=instance)
         rep = super().to_representation(instance)
-        rep['contact'] = profile.contact
-        rep['user_type'] = profile.user_type
+        rep['contact'] = getattr(profile, 'contact', None)
+        rep['user_type'] = getattr(profile, 'user_type', None)
         return rep
 
     def get_status(self, obj):

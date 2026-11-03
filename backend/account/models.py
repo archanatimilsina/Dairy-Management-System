@@ -17,13 +17,18 @@ class Profile(models.Model):
 @receiver(post_save, sender=User)
 def _post_save_receiver(sender,instance, created, **kwargs):
     if created:
-        Profile.objects.create(user=instance)
+        # Single INSERT, no preceding SELECT: on User create the Profile
+        # never exists yet, so get_or_create's extra SELECT (+ SAVEPOINT when
+        # inside the serializer's atomic block) is pure waste on every signup.
+        try:
+            Profile.objects.create(user=instance)
+        except Exception:
+            pass
 
-
-@receiver(post_save, sender=User)
-def _save_user_profile(sender, instance, **kwargs):
-    if hasattr(instance, 'profile'):
-        instance.profile.save()
+# NOTE: the old second post_save receiver (`instance.profile.save()` on every
+# User.save()) was removed. It fired an extra UPDATE on every register/login
+# profile touch -- an extra 100-250ms round trip to the remote Postgres on
+# every auth request for zero benefit (serializers use get_or_create anyway).
     
 
 class CompanyConfiguration(models.Model):

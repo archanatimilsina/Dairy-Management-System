@@ -1,1 +1,1 @@
-web: gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4 --worker-class gthread --timeout 60 --graceful-timeout 30 --access-logfile - --error-logfile -
+web: gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 8 --worker-class gthread --timeout 120 --graceful-timeout 30 --keep-alive 5 --preload --max-requests 1000 --max-requests-jitter 200 --access-logfile - --error-logfile -

@@ -4,7 +4,15 @@ services:
     runtime: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
-    startCommand: python manage.py migrate --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4 --worker-class gthread --timeout 60
+    # preDeployCommand runs once per deploy, NOT on every cold-start wake.
+    # The old startCommand ran `migrate` on every wake, adding 5-15s to the
+    # first /register/ or /login/ after idle -- the main cause of the 20s
+    # axios timeout. Migrations now run at deploy time; wake-ups boot
+    # gunicorn directly. Single worker + preload halves RAM (~512MB free tier)
+    # and cuts cold-start import time; threads handle concurrency (password
+    # hashing releases the GIL, DB waits don't need processes).
+    preDeployCommand: python manage.py migrate --noinput
+    startCommand: gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 8 --worker-class gthread --timeout 120 --graceful-timeout 30 --keep-alive 5 --preload --max-requests 1000 --max-requests-jitter 200 --access-logfile - --error-logfile -
     healthCheckPath: /health/
     envVars:
       - key: PYTHON_VERSION

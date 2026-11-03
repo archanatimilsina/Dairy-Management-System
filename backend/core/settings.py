@@ -221,8 +221,12 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/hour',
-        'user': '1000/hour',
+        # Auth endpoints share the anon bucket with all other public reads
+        # (products, company-info...). 100/hour was low enough that a few
+        # cold-start retries + normal browsing could 429 a real signup/login
+        # and look like a hang. 300/hour still blocks brute force.
+        'anon': '300/hour',
+        'user': '2000/hour',
     },
 }
 
