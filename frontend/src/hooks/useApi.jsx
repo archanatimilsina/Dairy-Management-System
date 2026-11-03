@@ -11,7 +11,10 @@ const useApi = () => {
         setError(null);
 
         try {
-            const response = await api[method.toLowerCase()](url, payload);
+            const m = method.toLowerCase();
+            const response = (m === 'get' || m === 'delete')
+                ? await api[m](url, payload ? { params: payload } : undefined)
+                : await api[m](url, payload);
             setData(response.data);
             setLoading(false);
             return { success: true, data: response.data };

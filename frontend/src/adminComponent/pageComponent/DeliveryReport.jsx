@@ -117,13 +117,13 @@ const DeliveryReport = () => {
 
 const Container = styled.div` font-family: 'DM Sans', sans-serif; `;
 const Header = styled.div` margin-bottom: 30px; h1 { font-size: 1.8rem; color: #2A1F10; } p { color: #8A7B6D; font-size: 0.9rem; } `;
-const SummaryGrid = styled.div` display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; `;
+const SummaryGrid = styled.div` display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin-bottom: 30px; @media (max-width: 768px) { grid-template-columns: minmax(0, 1fr); } `;
 const StatCard = styled.div` background: white; padding: 20px; border-radius: 16px; border: 1px solid #EAE3D6; display: flex; align-items: center; gap: 15px; .icon-box { background: #F5F2EE; color: #B8935A; padding: 12px; border-radius: 12px; } p { font-size: 0.75rem; color: #8A7B6D; text-transform: uppercase; margin: 0; } h3 { font-size: 1.5rem; color: #2A1F10; margin: 0; } `;
-const ControlBar = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 20px; `;
+const ControlBar = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 12px 20px; flex-wrap: wrap; `;
 const SearchBox = styled.div` display: flex; align-items: center; background: white; padding: 10px 15px; border-radius: 12px; border: 1px solid #EAE3D6; gap: 10px; color: #8A7B6D; input { border: none; outline: none; width: 200px; } `;
 const FilterButtons = styled.div` display: flex; gap: 5px; button { padding: 8px 15px; border-radius: 10px; border: none; background: #F5F2EE; color: #8A7B6D; font-size: 0.75rem; font-weight: 700; cursor: pointer; &.active { background: #2A1F10; color: white; } } `;
-const TableWrapper = styled.div` background: white; border-radius: 20px; border: 1px solid #EAE3D6; overflow: hidden; `;
-const ReportTable = styled.table` width: 100%; border-collapse: collapse; th { text-align: left; padding: 20px; color: #8A7B6D; font-size: 0.75rem; text-transform: uppercase; border-bottom: 1px solid #F5F2EE; } td { padding: 20px; border-bottom: 1px solid #F5F2EE; } .time { color: #8A7B6D; font-size: 0.85rem; } .empty { text-align: center; padding: 40px; color: #8A7B6D; } `;
+const TableWrapper = styled.div` background: white; border-radius: 20px; border: 1px solid #EAE3D6; overflow-x: auto; -webkit-overflow-scrolling: touch; `;
+const ReportTable = styled.table` width: 100%; min-width: 720px; border-collapse: collapse; th { text-align: left; padding: 20px; color: #8A7B6D; font-size: 0.75rem; text-transform: uppercase; border-bottom: 1px solid #F5F2EE; } td { padding: 20px; border-bottom: 1px solid #F5F2EE; } .time { color: #8A7B6D; font-size: 0.85rem; } .empty { text-align: center; padding: 40px; color: #8A7B6D; } `;
 const CustomerInfo = styled.div` .name { display: block; font-weight: 700; color: #2A1F10; } .sub { font-size: 0.75rem; color: #B8935A; display: flex; align-items: center; gap: 4px; } `;
 const ItemList = styled.div` display: flex; flex-direction: column; gap: 4px; span { font-size: 0.8rem; color: #666; } `;
 const TypeBadge = styled.span` padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; background: #F5F2EE; color: #2A1F10; `;

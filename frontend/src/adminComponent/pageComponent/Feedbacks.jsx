@@ -29,7 +29,7 @@ const Feedbacks = () => {
   const handleResolve = async (fb) => {
     setBusy(true);
     const next = !fb.is_reviewed;
-    const result = await patch(`feedback/detail/${fb.id}`, { is_reviewed: next });
+    const result = await patch(`feedback/detail/${fb.id}/`, { is_reviewed: next });
     setBusy(false);
     if (result.success) {
       setFeedbacks(prev => prev.map(f => f.id === fb.id ? { ...f, is_reviewed: next } : f));
@@ -39,7 +39,7 @@ const Feedbacks = () => {
   const handleDelete = async (fb) => {
     if (!window.confirm('Delete this feedback entry?')) return;
     setBusy(true);
-    const result = await del(`feedback/detail/${fb.id}`);
+    const result = await del(`feedback/detail/${fb.id}/`);
     setBusy(false);
     if (result.success) {
       const remaining = feedbacks.filter(f => f.id !== fb.id);
@@ -51,7 +51,7 @@ const Feedbacks = () => {
   const handleSendReply = async (fb) => {
     if (!replyText.trim()) return;
     setBusy(true);
-    const result = await patch(`feedback/detail/${fb.id}`, { is_reviewed: true });
+    const result = await patch(`feedback/detail/${fb.id}/`, { is_reviewed: true });
     setBusy(false);
     if (result.success) {
       setFeedbacks(prev => prev.map(f => f.id === fb.id ? { ...f, is_reviewed: true } : f));
@@ -61,9 +61,12 @@ const Feedbacks = () => {
     }
   };
 
-  const filteredFeedbacks = feedbacks.filter(f => 
-    f.username?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    f.feedback_topic?.toLowerCase().includes(searchTerm.toLowerCase())
+  const q = searchTerm.toLowerCase();
+  const filteredFeedbacks = feedbacks.filter(f =>
+    (f.username || '').toLowerCase().includes(q) ||
+    (f.feedback_topic || '').toLowerCase().includes(q) ||
+    (f.feedback || '').toLowerCase().includes(q) ||
+    (f.email || '').toLowerCase().includes(q)
   );
 
   const activeFeedback = filteredFeedbacks.find(f => f.id === selectedId);
@@ -97,7 +100,7 @@ const Feedbacks = () => {
               onClick={() => setSelectedId(fb.id)}
             >
               <div className="item-main">
-                <Avatar>{fb.username.charAt(0)}</Avatar>
+                <Avatar>{(fb.username || "?").charAt(0)}</Avatar>
                 <div className="item-content">
                   <div className="item-top">
                     <span className="name">{fb.username}</span>
@@ -162,11 +165,11 @@ const Feedbacks = () => {
 
 const Container = styled.div` height: 80vh; display: flex; flex-direction: column; font-family: 'DM Sans', sans-serif; `;
 const Header = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; .title-area { display: flex; align-items: center; gap: 12px; h2 { margin: 0; font-size: 1.5rem; color: #2A1F10; } .count-pill { background: #F5F2EE; color: #B8935A; padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 0.75rem; } } `;
-const MainLayout = styled.div` display: grid; grid-template-columns: 350px 1fr; gap: 24px; flex: 1; overflow: hidden; `;
+const MainLayout = styled.div` display: grid; grid-template-columns: minmax(0, 350px) minmax(0, 1fr); gap: 24px; flex: 1; min-height: 0; @media (max-width: 900px) { grid-template-columns: minmax(0, 1fr); overflow-y: auto; } `;
 const ListView = styled.div` background: white; border-radius: 20px; overflow-y: auto; border: 1px solid #EAE3D6; `;
 const FeedbackItem = styled.div` padding: 20px; border-bottom: 1px solid #F5F2EE; cursor: pointer; transition: 0.3s; background: ${props => props.$isActive ? '#F5F2EE' : 'transparent'}; &:hover { background: #F5F2EE; } .item-main { display: flex; gap: 12px; } .name { font-weight: 700; color: #2A1F10; font-size: 0.9rem; } .date { font-size: 0.7rem; color: #8A7B6D; } .preview { margin: 4px 0 0; font-size: 0.8rem; color: #8A7B6D; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } `;
 const DetailView = styled.div` background: white; border-radius: 20px; border: 1px solid #EAE3D6; display: flex; flex-direction: column; `;
-const DetailContent = styled.div` padding: 40px; display: flex; flex-direction: column; height: 100%; `;
+const DetailContent = styled.div` padding: clamp(20px, 4vw, 40px); display: flex; flex-direction: column; height: 100%; `;
 const DetailHeader = styled.div` display: flex; justify-content: space-between; margin-bottom: 30px; .user-profile { display: flex; gap: 15px; align-items: center; } h3 { margin: 0; color: #2A1F10; } span { color: #B8935A; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; } `;
 const ReplyBox = styled.div` display: flex; gap: 10px; flex: 1; input { flex: 1; padding: 10px 14px; border: 1px solid #D8CFBE; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; outline: none; &:focus { border-color: #2A1F10; } } `;
 const ActionFooter = styled.div` margin-top: auto; padding-top: 30px; border-top: 1px solid #F5F2EE; display: flex; justify-content: space-between; align-items: center; gap: 12px; .primary-actions { display: flex; gap: 10px; } button { border: none; padding: 10px 20px; border-radius: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; } button:disabled { opacity: 0.6; cursor: not-allowed; } .btn-reply { background: #2A1F10; color: white; } .btn-resolve { background: #F5F2EE; color: #2A1F10; } .btn-delete { background: #FFF; color: #E74C3C; border: 1px solid #EAE3D6; } `;

@@ -1,16 +1,9 @@
 import React, { useState } from 'react';
-import styled, { createGlobalStyle } from 'styled-components';
+import styled from 'styled-components';
 import { Mail, Lock, User, Phone, ArrowRight, Eye, EyeOff, AtSign } from 'lucide-react';
 import useApi from '../../hooks/useApi';
 import { Link, useNavigate } from 'react-router-dom';
 
-const LocalStyle = createGlobalStyle`  
-  body {
-    background-color: #FAF7F2;
-    font-family: 'DM Sans', sans-serif;
-    color: #2A1F10;
-  }
-`;
 
 const RegisterPage = () => {
   const { loading, error, post } = useApi();
@@ -57,12 +50,13 @@ const RegisterPage = () => {
     localStorage.setItem('username', result.data.user.username);
     localStorage.setItem('email', result.data.user.email);
     localStorage.setItem('IsLoggedIn', 'true');
+    localStorage.setItem('is_staff', 'false');
     navigate('/');
   };
 
   return (
     <AuthWrapper>
-      <LocalStyle />
+      
       <AuthCard>
         <LogoArea>
           <div className="logo-circle">E</div>
@@ -194,7 +188,7 @@ const RegisterPage = () => {
 export default RegisterPage;
 
 const AuthWrapper = styled.div`
-  min-height: 100vh;
+  min-height: 100vh; min-height: 100dvh; width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -247,7 +241,7 @@ const LogoArea = styled.div`
   
   p { 
     color: #6B5C4A; 
-    font-size: 0.98rem;
+    font-size: 16px;
     font-weight: 500;
   }
 `;
@@ -326,7 +320,7 @@ const InputGroup = styled.div`
       width: 100%; 
       margin-left: 12px; 
       font-family: 'DM Sans', sans-serif;
-      font-size: 0.98rem;
+      font-size: 16px;
       color: #2A1F10;
       font-weight: 500;
       box-sizing: border-box;

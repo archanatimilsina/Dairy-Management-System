@@ -1,19 +1,26 @@
 import Navbar from "../elementComponent/Navbar"
 import FooterSection from "../elementComponent/Footer";
 import { Outlet } from "react-router-dom";
+import styled from "styled-components";
 
 const MainLayout = () => {
   return (
   <>
+    <a className="skip-link" href="#main-content">Skip to content</a>
     <Navbar />
-    <Outlet />
-    {/* FooterSection was imported here but never rendered, so the footer (and its
-        company-info/ fetch) only appeared on Home and Product. Rendering it once
-        at layout level covers every page; the per-page copies in Home.jsx and
-        Product.jsx were removed so it does not appear twice. */}
+    <PageMain id="main-content">
+      <Outlet />
+    </PageMain>
     <FooterSection />
   </>
   )
 }
+
+const PageMain = styled.main`
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  min-height: 60vh;
+`;
 
 export default MainLayout

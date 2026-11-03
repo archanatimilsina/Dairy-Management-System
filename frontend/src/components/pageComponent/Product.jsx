@@ -1,18 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import styled, { createGlobalStyle } from 'styled-components';
+import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import Navbar from '../elementComponent/Navbar';
 import useApi from '../../hooks/useApi';
+import { resolveMediaUrl } from '../../utils/media';
 import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiShoppingBag, FiCheckCircle, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
-const LocalStyle = createGlobalStyle`  
-  body {
-    background-color: #FAF7F2;
-    font-family: 'DM Sans', sans-serif;
-    color: #2A1F10;
-  }
-`;
 
 const ProductPage = () => {
   const { get, post } = useApi();
@@ -31,10 +24,12 @@ const PAGE_SIZE = 20;
       const result = await get(`product/listCreate/?page=${currentPage}`);
       const categoriesRes= await get('product/category/listCreate/')
 
-      if (result.success) 
+      if (result.success)
       {
-        setProducts(result.data.results || []);
-        setTotalPages(Math.ceil((result.data.count || 0) / PAGE_SIZE));
+        const list = Array.isArray(result.data) ? result.data : (result.data?.results || []);
+        setProducts(list);
+        const count = Array.isArray(result.data) ? result.data.length : (result.data?.count ?? list.length);
+        setTotalPages(Math.ceil(count / PAGE_SIZE));
       }
       if (categoriesRes.success && Array.isArray(categoriesRes.data)) {
         const backendCatNames = categoriesRes.data.map(cat => cat.name);
@@ -98,7 +93,7 @@ const PAGE_SIZE = 20;
 
   return (
     <PageWrapper>
-      <LocalStyle />
+      
       <HeroSection>
         <div className="hero-content">
           <h1>Elsa Market Catalog</h1>
@@ -150,7 +145,7 @@ const PAGE_SIZE = 20;
                   transition={{ duration: 0.3 }}
                 >
                   <ImageContainer>
-                    <img src={product.picture_src} alt={product.product_name} loading="lazy" />
+                    <img src={resolveMediaUrl(product.picture_src)} alt={product.product_name} loading="lazy" onError={(e) => { e.currentTarget.src = '/logo.png'; }} />
                     <CategoryBadge>{product.category_name}</CategoryBadge>
                   </ImageContainer>
                   
@@ -224,9 +219,10 @@ const PageWrapper = styled.div`
 `;
 
 const HeroSection = styled.div`
-  height: 440px;
+  min-height: clamp(320px, 50vw, 440px);
+  padding: clamp(48px, 8vw, 80px) 20px;
   background: linear-gradient(180deg, rgba(42, 31, 16, 0.4) 0%, rgba(25, 25, 25, 0.65) 100%), 
-              url('../../../public/Dairy.jpg');
+              url('/Dairy.jpg');
   background-size: cover;
   background-position: center;
   display: flex;
@@ -405,8 +401,8 @@ const ResultsInfo = styled.div`
 
 const ProductGrid = styled(motion.div)`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(285px, 1fr));
-  gap: 30px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: clamp(16px, 3vw, 30px);
 `;
 
 const ProductCard = styled(motion.div)`

@@ -12,22 +12,28 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if not DATABASE_URL:
-    raise ImproperlyConfigured(
-        'DATABASE_URL is not set. The app cannot serve a single DB-backed '
-        'endpoint without it (every request would return HTTP 500). '
-        'Set it in your host\'s environment, e.g. Render -> Environment.'
-    )
+    # Never crash at import: Render runs collectstatic during build, often
+    # without runtime env. Fall back to local sqlite so the build succeeds;
+    # /health/ will report database: unavailable until a real URL is set.
+    import warnings
+    warnings.warn('DATABASE_URL is not set; using local sqlite fallback.')
+    DATABASE_URL = 'sqlite:///' + str(BASE_DIR / 'db.sqlite3')
 
 if 'postgres' not in DATABASE_URL and 'sqlite' not in DATABASE_URL:
-    raise ImproperlyConfigured(
-        f'DATABASE_URL does not point at a Postgres database: {DATABASE_URL!r}'
-    )
+    raise ImproperlyConfigured('DATABASE_URL must be a Postgres or sqlite URL.')
 
+# Supabase pooler (6543 / pgbouncer transaction mode) cannot hold server-side
+# connections: conn_max_age must be 0 or you get hangs + prepared-statement
+# errors. Direct Postgres (5432) can reuse connections.
+_is_pooler = 'pooler' in DATABASE_URL or ':6543' in DATABASE_URL
+# Managed hosts (Supabase / Render / Neon) require SSL; local PG usually not.
+_is_managed = any(h in DATABASE_URL for h in ('supabase', 'render.com', 'neon.tech'))
 DATABASES = {
     'default': dj_database_url.config(
         default=DATABASE_URL,
-        conn_max_age=600,
-        conn_health_checks=True
+        conn_max_age=0 if _is_pooler else 600,
+        conn_health_checks=not _is_pooler,
+        ssl_require=_is_managed,
     )
 }
 
@@ -44,7 +50,8 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 AWS_ACCESS_KEY_ID = os.environ.get('SUPABASE_S3_ACCESS_KEY')
 AWS_SECRET_ACCESS_KEY = os.environ.get('SUPABASE_S3_SECRET_KEY')
 AWS_STORAGE_BUCKET_NAME = os.environ.get('SUPABASE_BUCKET_NAME')  
-AWS_S3_ENDPOINT_URL = f"{os.environ.get('SUPABASE_URL')}/storage/v1/s3"
+_supa = os.environ.get('SUPABASE_URL')
+AWS_S3_ENDPOINT_URL = f"{_supa}/storage/v1/s3" if _supa else None
 AWS_S3_REGION_NAME = "ap-southeast-1"  
 AWS_DEFAULT_ACL = 'public-read'
 AWS_QUERYSTRING_AUTH = False           
@@ -60,22 +67,23 @@ MEDIA_ROOT =os.path.join(BASE_DIR, 'media')
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-SECRET_KEY = os.environ.get(
-    'SECRET_KEY',
-    'django-insecure-(!ch1zz7wnz89wq-gvm-d$37g=(e@+@5eu(k2%rnc3r@08bs@t'
-)
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    if os.environ.get('DEBUG', '0') == '1':
+        SECRET_KEY = 'django-insecure-(!ch1zz7wnz89wq-gvm-d$37g=(e@+@5eu(k2%rnc3r@08bs@t'
+    else:
+        raise ImproperlyConfigured('SECRET_KEY is not set. Set it in the environment.')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', '0') == '1'
 
-ALLOWED_HOSTS = [
-    h.strip()
-    for h in os.environ.get(
-        'ALLOWED_HOSTS',
-        'localhost,127.0.0.1,dairy-management-system-te10.onrender.com'
-    ).split(',')
-    if h.strip()
-]
+_hosts = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', '').split(',') if h.strip()]
+if not _hosts:
+    _hosts = ['localhost', '127.0.0.1', '.onrender.com']
+_render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if _render_host and _render_host not in _hosts:
+    _hosts.append(_render_host)
+ALLOWED_HOSTS = _hosts
 
 
 # Application definition
@@ -204,7 +212,15 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ),
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/hour',
+        'user': '1000/hour',
+    },
 }
 
 SIMPLE_JWT = {
@@ -216,14 +232,38 @@ SIMPLE_JWT = {
 }
 
 CORS_ALLOWED_ORIGINS = [
-    'http://127.0.0.1:5173',
-    'http://localhost:5173',
-    'https://dairy-management-system-git-main-archanatimilsinas-projects.vercel.app',
-    'https://dairy-management-system-ej2jdvxiy-archanatimilsinas-projects.vercel.app',
-    'https://dairy-management-system-rho.vercel.app'
+    o.strip() for o in os.environ.get(
+        'CORS_ALLOWED_ORIGINS',
+        'http://127.0.0.1:5173,http://localhost:5173,https://dairy-management-system-rho.vercel.app',
+    ).split(',') if o.strip()
 ]
+# Any Vercel preview of this project (branch deploys) without listing each URL.
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r'^https://dairy-management-system-.*\.vercel\.app$',
+]
+_csrf = [o.strip() for o in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
+if not _csrf:
+    _csrf = ['https://dairy-management-system-rho.vercel.app', 'https://*.onrender.com']
+if _render_host and f'https://{_render_host}' not in _csrf:
+    _csrf.append(f'https://{_render_host}')
+CSRF_TRUSTED_ORIGINS = _csrf
 
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_CREDENTIALS = False
+
+# Production hardening (active when DEBUG=0).
+if os.environ.get('DEBUG', '0') != '1':
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = 'same-origin'
+    X_FRAME_OPTIONS = 'DENY'
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', '15'))
+PASSWORD_RESET_TIMEOUT = 86400
 
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
 

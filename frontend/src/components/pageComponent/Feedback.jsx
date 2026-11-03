@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import styled, { createGlobalStyle } from 'styled-components';
+import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom'; 
 import { 
   Star, Truck, Package, 
@@ -8,15 +8,6 @@ import {
 import useApi from '../../hooks/useApi';
 import { motion } from 'framer-motion';
 
-const LocalStyle = createGlobalStyle`
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@600;700;800&display=swap');
-  
-  body {
-    background-color: #FAF7F2;
-    font-family: 'DM Sans', sans-serif;
-    color: #2A1F10;
-  }
-`;
 
 const Feedback = () => {
   const { post } = useApi();
@@ -56,7 +47,7 @@ const Feedback = () => {
   if (submitted) {
     return (
       <PageWrapper>
-        <LocalStyle />
+        
         <Container>
           <SuccessWrapper
             initial={{ opacity: 0, scale: 0.96 }}
@@ -80,7 +71,7 @@ const Feedback = () => {
 
   return (
     <PageWrapper>
-      <LocalStyle />
+      
       <Container>
         <HeaderSection>
           <BackButton onClick={() => navigate(-1)}>
@@ -143,7 +134,8 @@ const PageWrapper = styled.div`
 const Container = styled.div`
   max-width: 840px; 
   margin: 0 auto; 
-  padding: 80px 5%;
+  padding: clamp(40px, 8vw, 80px) 5%;
+  min-width: 0;
 `;
 
 const HeaderSection = styled.div`
@@ -268,7 +260,7 @@ const InputGroup = styled.div`
     border-radius: 14px; 
     border: 1px solid #D8CFBE;
     font-family: 'DM Sans', sans-serif; 
-    font-size: 0.98rem;
+    font-size: 16px;
     color: #2A1F10;
     background: #FFFFFF; 
     transition: all 0.25s ease;

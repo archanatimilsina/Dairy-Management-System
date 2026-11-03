@@ -23,7 +23,8 @@ const Category = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = await post('product/category/listCreate/', formData);
+    if (!formData.name.trim() || !formData.unit.trim()) return;
+    const result = await post('product/category/listCreate/', { name: formData.name.trim(), unit: formData.unit.trim() });
     if (result.success) {
       setCategories(prev => [...prev, result.data]);
       setFormData({ name: '', unit: '' });
@@ -115,8 +116,9 @@ const Header = styled.div`
 
 const MainGrid = styled.div`
  display: grid;
-  grid-template-columns: 350px 1fr;
-   gap: 30px; `;
+  grid-template-columns: minmax(0, 350px) minmax(0, 1fr);
+   gap: 30px;
+   @media (max-width: 900px) { grid-template-columns: minmax(0, 1fr); } `;
 
 const Card = styled.div`
  background: white;

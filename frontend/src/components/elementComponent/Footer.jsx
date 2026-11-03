@@ -1,13 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styled, { createGlobalStyle } from 'styled-components';
+import styled from 'styled-components';
 import { FiInstagram, FiFacebook, FiTwitter, FiMail } from 'react-icons/fi';
 import { FaTiktok } from 'react-icons/fa6';
 import useApi from '../../hooks/useApi';
-
-const LocalStyle = createGlobalStyle`
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@600;700;800&display=swap');
-`;
 
 const FooterSection = () => {
   const navigate = useNavigate();
@@ -38,7 +34,6 @@ const FooterSection = () => {
 
   return (
     <FooterWrapper>
-      <LocalStyle />
       <div className="footer-content">
         <BrandSection>
           <h3 onClick={() => navigate("/")}>Elsa<span>Diary</span></h3>

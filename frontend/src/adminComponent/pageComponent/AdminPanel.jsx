@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import { Link } from 'react-router-dom';
 import { useLogout } from '../../hooks/useLogout';
 import OrderReport from './OrderReport';
 import DeliveryReport from './DeliveryReport';
@@ -10,16 +11,16 @@ import MailPage from './Mail';
 import Feedbacks from './Feedbacks';
 import CompanyDetails from './CompanyDetails';
 import Category from './Category';
-import logo from '../../../public/logo.png';
 
 
-import { 
-  LayoutDashboard, ShoppingCart, Truck, Mail, Package, Users, 
-  ChevronRight, LogOut, Building2, Tag, Star
+import {
+  LayoutDashboard, ShoppingCart, Truck, Mail, Package, Users,
+  LogOut, Building2, Tag, Star, Menu, X
 } from 'lucide-react';
 
 const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState('orders');
+  const [navOpen, setNavOpen] = useState(false);
   const adminName = localStorage.getItem("username") || 'Administrator';
   const logout = useLogout();
 
@@ -50,19 +51,30 @@ const AdminPanel = () => {
     }
   };
 
+  const selectTab = (id) => {
+    setActiveTab(id);
+    setNavOpen(false);
+  };
+
   return (
     <AdminWrapper>
-      <Sidebar>
-   <LogoSection href="/">
-          <img src={logo} alt="Elsa Premium Dairy" />
-        </LogoSection>
+      {navOpen && <Scrim onClick={() => setNavOpen(false)} aria-hidden="true" />}
+      <Sidebar $open={navOpen}>
+        <SidebarTop>
+          <LogoLink to="/">
+            <img src="/logo.png" alt="Elsa Premium Dairy" />
+          </LogoLink>
+          <CloseButton onClick={() => setNavOpen(false)} aria-label="Close admin menu">
+            <X size={20} />
+          </CloseButton>
+        </SidebarTop>
 
         <MenuSection>
           {menuOptions.map((item) => (
-            <MenuItem 
-              key={item.id} 
+            <MenuItem
+              key={item.id}
               $active={activeTab === item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => selectTab(item.id)}
             >
               {item.icon}
               <span>{item.label}</span>
@@ -81,7 +93,12 @@ const AdminPanel = () => {
 
       <MainContent>
         <Header>
-          <h2>{menuOptions.find(m => m.id === activeTab)?.label}</h2>
+          <HeaderLeft>
+            <Hamburger onClick={() => setNavOpen(true)} aria-label="Open admin menu">
+              <Menu size={20} />
+            </Hamburger>
+            <h2>{menuOptions.find(m => m.id === activeTab)?.label}</h2>
+          </HeaderLeft>
           <div className="user-profile">
             <div className="admin-info">
               <span className="name">{adminName}</span>
@@ -90,37 +107,78 @@ const AdminPanel = () => {
             <div className="avatar">{adminName.charAt(0).toUpperCase()}</div>
           </div>
         </Header>
-        
+
         <ContentBody>
           {renderContent()}
-        </ContentBody> 
-      </MainContent> 
+        </ContentBody>
+      </MainContent>
     </AdminWrapper>
   );
 };
 
 const AdminWrapper = styled.div`
   display: flex; min-height: 100vh;
-  background-color: #FAF7F2; 
+  background-color: #FAF7F2;
   font-family: 'DM Sans', sans-serif;
+  min-width: 0;
+`;
+
+const Scrim = styled.div`
+  display: none;
+  @media (max-width: 1024px) {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(42, 31, 16, 0.45);
+    z-index: 998;
+  }
 `;
 
 const Sidebar = styled.aside`
   width: 280px; background-color: #FFFFFF;
   border-right: 1px solid #EAE3D6;
   display: flex; flex-direction: column;
-  position: fixed; height: 100vh;
+  position: fixed; height: 100vh; height: 100dvh;
+  top: 0; left: 0; z-index: 999;
+  transition: transform 0.3s ease;
+
+  @media (max-width: 1024px) {
+    transform: ${(props) => (props.$open ? 'translateX(0)' : 'translateX(-100%)')};
+    width: min(300px, 84vw);
+  }
+`;
+
+const SidebarTop = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 0;
+`;
+
+const CloseButton = styled.button`
+  display: none;
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  border: 1px solid #EAE3D6;
+  background: #fff;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+
+  @media (max-width: 1024px) {
+    display: inline-flex;
+  }
 `;
 
 
-const LogoSection = styled.a`
+const LogoLink = styled(Link)`
   display: flex;
   align-items: center;
   transition: transform 0.3s ease;
-  padding: 20px;
-  
+  padding: 4px;
+
   img {
-    height: 120px; 
+    height: clamp(64px, 8vw, 110px);
     width: auto;
     object-fit: contain;
   }
@@ -130,15 +188,16 @@ const LogoSection = styled.a`
   }
 `;
 
-const MenuSection = styled.div`flex: 1; padding: 0 20px; overflow-y: auto;`;
+const MenuSection = styled.div`flex: 1; padding: 12px 20px; overflow-y: auto; min-height: 0;`;
 
 const MenuItem = styled.div`
   display: flex; align-items: center; gap: 15px;
-  padding: 14px 20px; border-radius: 12px; margin-bottom: 4px;
+  padding: 14px 16px; border-radius: 12px; margin-bottom: 4px;
   cursor: pointer; position: relative; transition: all 0.3s ease;
   background: ${props => props.$active ? '#EAE3D6' : 'transparent'};
   color: ${props => props.$active ? '#2A1F10' : '#8A7B6D'};
   font-weight: ${props => props.$active ? '700' : '500'};
+  min-height: 52px;
 
   &:hover { background: ${props => props.$active ? '#EAE3D6' : '#F5F2EE'}; color: #2A1F10; }
   .active-pill {
@@ -148,38 +207,73 @@ const MenuItem = styled.div`
 `;
 
 const FooterSection = styled.div`
-  padding: 25px;
+  padding: 20px 25px calc(20px + env(safe-area-inset-bottom));
   .logout-btn {
-    width: 100%; padding: 12px; display: flex; align-items: center; gap: 12px;
-    border: none; background: #2A1F10; color: #FFF; border-radius: 12px; 
-    font-weight: 700; cursor: pointer; transition: 0.3s;
+    width: 100%; padding: 14px 12px; display: flex; align-items: center; justify-content: center; gap: 12px;
+    border: none; background: #2A1F10; color: #FFF; border-radius: 12px;
+    font-weight: 700; cursor: pointer; transition: 0.3s; min-height: 52px; font-size: 1rem;
     &:hover { background: #B8935A; }
   }
 `;
 
-const MainContent = styled.main`flex: 1; margin-left: 280px; padding: 40px;`; 
+const MainContent = styled.main`
+  flex: 1;
+  min-width: 0;
+  margin-left: 280px;
+  padding: clamp(20px, 4vw, 40px);
+
+  @media (max-width: 1024px) {
+    margin-left: 0;
+  }
+`;
+
+const HeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+`;
+
+const Hamburger = styled.button`
+  display: none;
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  border: 1px solid #EAE3D6;
+  background: #fff;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+
+  @media (max-width: 1024px) {
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+`;
 
 const Header = styled.header`
-  display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;
-  h2 { font-family: 'Playfair Display'; font-size: 2rem; color: #2A1F10; }
+  display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  margin-bottom: clamp(20px, 4vw, 40px); flex-wrap: wrap;
+  h2 { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(1.4rem, 3vw, 2rem); color: #2A1F10; margin: 0; }
   .user-profile {
     display: flex; align-items: center; gap: 15px;
     .admin-info { display: flex; flex-direction: column; align-items: flex-end;
-      .name { font-weight: 700; color: #2A1F10; }
+      .name { font-weight: 700; color: #2A1F10; max-width: 32vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .role { font-size: 0.8rem; color: #B8935A; }
     }
     .avatar {
-      width: 45px; height: 45px; background: #2A1F10; color: #B8935A; 
+      width: 45px; height: 45px; background: #2A1F10; color: #B8935A;
       border-radius: 12px; display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-family: 'Playfair Display';
+      font-weight: 800; font-family: 'Playfair Display', Georgia, serif; flex-shrink: 0;
     }
   }
 `;
 
 const ContentBody = styled.div`
   background: white; min-height: 500px; border-radius: 20px;
-  padding: 40px; border: 1px solid #EAE3D6;
+  padding: clamp(16px, 3vw, 40px); border: 1px solid #EAE3D6;
   box-shadow: 0 4px 20px rgba(42,31,16,0.05);
+  min-width: 0;
+  overflow-x: auto;
 `;
 
 export default AdminPanel;

@@ -1,23 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import styled, { createGlobalStyle } from 'styled-components';
+import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 
-const LocalStyle = createGlobalStyle`
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap');
-  
-  body {
-    background-color: #FAF7F2;
-    font-family: 'DM Sans', sans-serif;
-    color: #2A1F10;
-  }
-`;
 
 const NotFound = () => {
   return (
     <Container>
-      <LocalStyle />
+      
       
       <ContentCard
         initial={{ opacity: 0, y: 30 }}
@@ -31,10 +22,14 @@ const NotFound = () => {
         </Title>
         
         <Description>
-          The page you are looking for might have been removed, had its name changed, 
+          The page you are looking for might have been removed, had its name changed,
           or is temporarily unavailable. Let us guide you back to our fresh selections.
         </Description>
-        
+
+        <ActionWrapper>
+          <StyledLink to="/"><ArrowLeft size={18} /> Back to Home</StyledLink>
+        </ActionWrapper>
+
    
       </ContentCard>
     </Container>
@@ -50,7 +45,7 @@ const Container = styled.div`
   justify-content: center;
   text-align: center;
   padding: 40px 20px;
-  min-height: 85vh;
+  min-height: 85vh; min-height: 85dvh;
   width: 100%;
   overflow-x: hidden;
 `;

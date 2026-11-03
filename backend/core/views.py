@@ -25,14 +25,12 @@ class HealthView(APIView):
                 cursor.fetchone()
             payload["database"] = {
                 "ok": True,
-                "alias": connection.settings_dict.get("NAME"),
-                "engine": connection.settings_dict.get("ENGINE"),
             }
-        except Exception as exc:  # noqa: BLE001 - we want the reason, not a crash
+        except Exception:  # noqa: BLE001 - we want the reason, not a crash
             payload["status"] = "degraded"
             payload["database"] = {
                 "ok": False,
-                "error": f"{type(exc).__name__}: {exc}".strip(),
+                "error": "unavailable",
             }
             status_code = 503
 

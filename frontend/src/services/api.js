@@ -1,7 +1,10 @@
 import axios from "axios";
 
+if (!import.meta.env.VITE_API_URL && typeof console !== 'undefined') {
+    console.warn('VITE_API_URL is not set; falling back to http://localhost:8000. Set it in Vercel to your Render backend URL.');
+}
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL,
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
     // Never leave a form spinning forever: fail fast so the user gets an error
     // instead of watching "Processing..." for minutes.
     timeout: 20000,
@@ -16,7 +19,11 @@ const PUBLIC_ENDPOINTS = [
     'register',
     'logout',
     'forgot-password',
+    'reset-password',
     'api/token',
+    'contact/',
+    'feedback/',
+    'company-info',
 ];
 
 const isPublicEndpoint = (url = '') =>
@@ -52,6 +59,7 @@ const clearSession = () => {
     localStorage.removeItem('IsLoggedIn');
     localStorage.removeItem('username');
     localStorage.removeItem('email');
+    localStorage.removeItem('is_staff');
 };
 
 api.interceptors.response.use(
@@ -83,8 +91,9 @@ api.interceptors.response.use(
 
         try {
             if (!refreshPromise) {
+                const base = (api.defaults.baseURL || '').replace(/\/$/, '');
                 refreshPromise = axios
-                    .post(`${api.defaults.baseURL.replace(/\/$/, '')}/api/token/refresh/`, {
+                    .post(`${base}/api/token/refresh/`, {
                         refresh: refreshToken,
                     })
                     .finally(() => {

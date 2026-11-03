@@ -17,9 +17,22 @@ class ProductListCreateView(generics.ListCreateAPIView):
     serializer_class = ProductSerializer
     pagination_class = ProductPagination
 
+    def get_permissions(self):
+        # Public catalog reads; writes are admin-only. Fail-closed.
+        from rest_framework.permissions import AllowAny, IsAdminUser
+        if self.request.method in ('GET', 'HEAD', 'OPTIONS'):
+            return [AllowAny()]
+        return [IsAdminUser()]
+
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.select_related('category').all()
     serializer_class = ProductSerializer
+
+    def get_permissions(self):
+        from rest_framework.permissions import AllowAny, IsAdminUser
+        if self.request.method in ('GET', 'HEAD', 'OPTIONS'):
+            return [AllowAny()]
+        return [IsAdminUser()]
 
 
 class CartListCreateView(generics.ListCreateAPIView):
@@ -32,7 +45,18 @@ class CartListCreateView(generics.ListCreateAPIView):
               .select_related('product', 'product__category', 'user'))
 
    def perform_create(self, serializer):
-      serializer.save(user=self.request.user)
+      # Merge duplicates instead of creating parallel rows.
+      product = serializer.validated_data.get('product')
+      quantity = serializer.validated_data.get('quantity') or 1
+      if quantity < 1:
+          quantity = 1
+      existing = Cart.objects.filter(user=self.request.user, product=product).first()
+      if existing:
+          existing.quantity = (existing.quantity or 0) + quantity
+          existing.save(update_fields=['quantity'])
+          serializer.instance = existing
+          return
+      serializer.save(user=self.request.user, quantity=quantity)
 
 class CartDetailView(generics.RetrieveUpdateDestroyAPIView):
    serializer_class = CartSerializer
@@ -48,6 +72,18 @@ class CategoryListCreateView(generics.ListCreateAPIView):
    queryset = Category.objects.all()
    serializer_class = CategorySerializer
 
+   def get_permissions(self):
+       from rest_framework.permissions import AllowAny, IsAdminUser
+       if self.request.method in ('GET', 'HEAD', 'OPTIONS'):
+           return [AllowAny()]
+       return [IsAdminUser()]
+
 class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
    queryset = Category.objects.all()
    serializer_class = CategorySerializer
+
+   def get_permissions(self):
+       from rest_framework.permissions import AllowAny, IsAdminUser
+       if self.request.method in ('GET', 'HEAD', 'OPTIONS'):
+           return [AllowAny()]
+       return [IsAdminUser()]

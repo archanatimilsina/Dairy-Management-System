@@ -33,14 +33,25 @@ const SendMailPage = () => {
     setFormData({ ...formData, [name]: value });
   };
 
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const handleSend = async (e) => {
     e.preventDefault();
-    if (selectedRecipients.length === 0) {
+    const list = selectedRecipients ?? [];
+    if (list.length === 0) {
       alert("Please select or enter at least one recipient.");
       return;
     }
+    const bad = list.filter(o => !EMAIL_RE.test(String(o.value || '').trim()));
+    if (bad.length > 0) {
+      alert('Invalid email: ' + bad.map(o => o.value).join(', '));
+      return;
+    }
+    if (list.length > 50) {
+      alert('Too many recipients (max 50).');
+      return;
+    }
     setIsSending(true);
-    const emails = selectedRecipients.map(option => option.value);
+    const emails = list.map(option => String(option.value).trim().toLowerCase());
     const payload = { to: emails, subject: formData.subject, message: formData.message };
     const result = await post('sendMail/', payload);
     
@@ -70,7 +81,7 @@ const SendMailPage = () => {
               isLoading={loadingUsers}
               options={userOptions}
               value={selectedRecipients}
-              onChange={(newValue) => setSelectedRecipients(newValue)}
+              onChange={(newValue) => setSelectedRecipients(newValue ?? [])}
               placeholder="Search or type email..."
               styles={customSelectStyles}
             />
@@ -115,7 +126,7 @@ const customSelectStyles = {
 
 const Container = styled.div` max-width: 800px; margin: 0 auto; `;
 const ComposeWrapper = styled.div` background: white; border-radius: 20px; padding: 40px; border: 1px solid #EAE3D6; box-shadow: 0 4px 15px rgba(42,31,16,0.05); .form-header { margin-bottom: 30px; h3 { color: #2A1F10; font-size: 1.5rem; } p { color: #8A7B6D; font-size: 0.9rem; } } `;
-const InputGroup = styled.div` margin-bottom: 20px; label { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 700; color: #2A1F10; margin-bottom: 8px; } input { width: 100%; padding: 12px 16px; border-radius: 12px; border: 1px solid #EAE3D6; outline: none; &:focus { border-color: #B8935A; } } `;
+const InputGroup = styled.div` margin-bottom: 20px; label { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; color: #2A1F10; margin-bottom: 8px; } input { width: 100%; padding: 12px 16px; border-radius: 12px; border: 1px solid #EAE3D6; outline: none; &:focus { border-color: #B8935A; } } `;
 const TextAreaGroup = styled.div` margin-bottom: 25px; label { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 700; color: #2A1F10; margin-bottom: 8px; } textarea { width: 100%; height: 200px; padding: 16px; border-radius: 12px; border: 1px solid #EAE3D6; outline: none; resize: vertical; &:focus { border-color: #B8935A; } } `;
 const ButtonGroup = styled.div` display: flex; justify-content: space-between; align-items: center; .attachment-btn { background: none; border: none; color: #8A7B6D; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; } .send-btn { background: #2A1F10; color: white; padding: 12px 24px; border-radius: 12px; border: none; font-weight: 700; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: 0.3s; &:hover { background: #B8935A; } &:disabled { opacity: 0.6; } .spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } } } `;
 

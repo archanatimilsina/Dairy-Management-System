@@ -1,22 +1,14 @@
 import { useEffect, useState } from 'react';
-import styled, { createGlobalStyle } from 'styled-components';
+import styled from 'styled-components';
 import { 
   Trash2, Minus, Plus, ShoppingBag, 
   ArrowLeft, Truck, ShieldCheck, Check
 } from 'lucide-react';
 import useApi from '../../hooks/useApi';
+import { resolveMediaUrl } from '../../utils/media';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const LocalStyle = createGlobalStyle`
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@600;700;800&display=swap');
-  
-  body {
-    background-color: #FAF7F2;
-    font-family: 'DM Sans', sans-serif;
-    color: #2A1F10;
-  }
-`;
 
 const Cart = () => {
   const { get, patch, del } = useApi();
@@ -92,7 +84,7 @@ const Cart = () => {
 
   return (
     <PageWrapper>
-      <LocalStyle />
+      
       <Container>
         <Header>
           <button className="back-btn" onClick={() => navigate(-1)}>
@@ -128,7 +120,7 @@ const Cart = () => {
                         {item.selected && <Check size={12} color="white" strokeWidth={3} />}
                       </SelectionCircle>
 
-                      <img src={item.picture_src} alt={item.product_name} />
+                      <img src={resolveMediaUrl(item.picture_src)} alt={item.product_name} onError={(e) => { e.currentTarget.src = '/logo.png'; }} />
                       
                       <ItemInfo>
                         <div className="details">
@@ -467,6 +459,9 @@ const SummaryCard = styled.div`
   position: sticky; 
   top: 120px; 
   box-shadow: 0 10px 30px rgba(42,31,16,0.03);
+  @media (max-width: 1024px) {
+    position: static;
+  }
   
   h3 { 
     font-family: 'Playfair Display', serif;

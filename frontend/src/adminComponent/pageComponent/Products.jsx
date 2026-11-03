@@ -5,6 +5,7 @@ import {
   Image as ImageIcon, Layers, UploadCloud
 } from 'lucide-react';
 import useApi from '../../hooks/useApi';
+import { resolveMediaUrl } from '../../utils/media';
 
 const Products = () => {
   const { post, get, patch, del, loading } = useApi();
@@ -43,9 +44,14 @@ const Products = () => {
       const product = await get("product/listCreate/");
       if(category.success && product.success)
       {
-        setProducts(product.data.results || []);
-        setCategories(category.data || []);
-        setFormData(prev => ({ ...prev, category: category.data?.[0]?.id ?? "" }));
+        const prodList = Array.isArray(product.data) ? product.data : (product.data.results || []);
+        const catList = Array.isArray(category.data) ? category.data : (category.data.results || []);
+        setProducts(prodList);
+        setCategories(catList);
+        setFormData(prev => ({ ...prev, category: catList?.[0]?.id ?? "" }));
+      } else if (product.success) {
+        const prodList = Array.isArray(product.data) ? product.data : (product.data.results || []);
+        setProducts(prodList);
       }
 
     }
@@ -154,7 +160,7 @@ const filteredProducts = products.filter(p => {
               onChange={(e) => setSearchTerm(e.target.value)} 
             />
           </SearchBox>
-          <AddBtn onClick={() => setShowForm(true)}><Plus size={20} /> Add Product</AddBtn>
+          <AddBtn onClick={() => { setEditingId(null); setFormData(emptyForm()); setImagePreview(null); setShowForm(true); }}><Plus size={20} /> Add Product</AddBtn>
         </ActionRow>
       </Header>
 
@@ -178,10 +184,7 @@ const filteredProducts = products.filter(p => {
           filteredProducts.map(product => (
             <TableRow key={product.id}>
               <div className="col-img">
-                <img src={product.picture_src 
-        ? product.picture_src 
-        : 'https://via.placeholder.com/50'
-      } alt="" />
+                <img src={resolveMediaUrl(product.picture_src)} alt={product.product_name || ''} onError={(e) => { e.currentTarget.src = '/logo.png'; }} />
               </div>
               <div className="col-main">
                 <strong>{product.product_name}</strong>
@@ -211,7 +214,7 @@ const filteredProducts = products.filter(p => {
             <SidebarHeader>
               <div className="title">
                 <Layers size={20} color="#7DAACB" />
-                <h3>{loading ? "Processing..." : "Create New Product"}</h3>
+                <h3>{loading ? "Processing..." : (editingId !== null ? "Edit Product" : "Create New Product")}</h3>
               </div>
               <button className="close" onClick={() => setShowForm(false)}><X /></button>
             </SidebarHeader>
@@ -308,9 +311,9 @@ const SearchBox = styled.div` background: white; border-radius: 12px; display: f
 const AddBtn = styled.button` background: #2A1F10; color: white; border: none; padding: 0 25px; border-radius: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.3s; &:hover { background: #B8935A; } `;
 const TabRow = styled.div` display: flex; gap: 10px; margin-bottom: 30px; `;
 const Tab = styled.button` background: ${props => props.$active ? '#2A1F10' : 'transparent'}; color: ${props => props.$active ? 'white' : '#8A7B6D'}; border: 1px solid #EAE3D6; padding: 10px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; `;
-const TableContainer = styled.div` background: white; border-radius: 20px; border: 1px solid #EAE3D6; overflow: hidden; `;
-const TableHead = styled.div` display: grid; grid-template-columns: 80px 2fr 1fr 1fr 1.5fr 120px; padding: 20px; background: #F5F2EE; border-bottom: 1px solid #EAE3D6; font-size: 0.75rem; font-weight: 800; color: #2A1F10; text-transform: uppercase; `;
-const TableRow = styled.div` display: grid; grid-template-columns: 80px 2fr 1fr 1fr 1.5fr 120px; padding: 15px 20px; align-items: center; border-bottom: 1px solid #F5F2EE; &:hover { background: #FCFBF9; } .col-img img { width: 45px; height: 45px; border-radius: 10px; object-fit: cover; } .col-main { display: flex; flex-direction: column; strong { color: #2A1F10; } span { font-size: 0.7rem; color: #8A7B6D; } } .col-price { font-weight: 700; color: #2A1F10; } `;
+const TableContainer = styled.div` background: white; border-radius: 20px; border: 1px solid #EAE3D6; overflow-x: auto; -webkit-overflow-scrolling: touch; `;
+const TableHead = styled.div` display: grid; grid-template-columns: 80px 2fr 1fr 1fr 1.5fr 120px; min-width: 760px; padding: 20px; background: #F5F2EE; border-bottom: 1px solid #EAE3D6; font-size: 0.75rem; font-weight: 800; color: #2A1F10; text-transform: uppercase; `;
+const TableRow = styled.div` display: grid; grid-template-columns: 80px 2fr 1fr 1fr 1.5fr 120px; min-width: 760px; padding: 15px 20px; align-items: center; border-bottom: 1px solid #F5F2EE; &:hover { background: #FCFBF9; } .col-img img { width: 45px; height: 45px; border-radius: 10px; object-fit: cover; } .col-main { display: flex; flex-direction: column; strong { color: #2A1F10; } span { font-size: 0.7rem; color: #8A7B6D; } } .col-price { font-weight: 700; color: #2A1F10; } `;
 const Tag = styled.span` background: #F5F2EE; color: #8A7B6D; padding: 4px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; `;
 const StockStatus = styled.div` font-size: 0.85rem; font-weight: 700; color: ${props => props.$low ? '#B91C1C' : '#15803D'}; `;
 const IconButton = styled.button` background: none; border: none; padding: 8px; color: #8A7B6D; cursor: pointer; &:hover { color: #B8935A; } &.del:hover { color: #B91C1C; } `;

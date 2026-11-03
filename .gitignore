@@ -51,3 +51,15 @@ __pycache__/
 PROMPTS.md
 agentreport.md
 AGENTREPORT.md
+
+# --- Added: hardening hygiene ---
+.venv/
+*.sqlite3
+.env.*
+!**/.env.example
+*.log
+backend/staticfiles/
+.pytest_cache/
+.coverage
+coverage.xml
+.vercel/

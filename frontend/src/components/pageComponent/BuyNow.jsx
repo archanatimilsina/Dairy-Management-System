@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import styled, { createGlobalStyle } from 'styled-components';
+import styled from 'styled-components';
 import { 
   ArrowLeft, Phone, Mail, CheckCircle2, 
   Landmark, Wallet, Copy 
@@ -8,15 +8,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import useApi from '../../hooks/useApi';
 
-const LocalStyle = createGlobalStyle`
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@600;700;800&display=swap');
-  
-  body {
-    background-color: #FAF7F2;
-    font-family: 'DM Sans', sans-serif;
-    color: #2A1F10;
-  }
-`;
 
 const Checkout = () => {
   const [method, setMethod] = useState('esewa'); 
@@ -99,7 +90,7 @@ const Checkout = () => {
   if (isOrdered) {
     return (
       <SuccessWrapper>
-        <LocalStyle />
+        
         <SuccessScreen
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -119,7 +110,7 @@ const Checkout = () => {
 
   return (
     <PageWrapper>
-      <LocalStyle />
+      
       <Container>
         <Header>
           <button className="back-btn" onClick={() => navigate(-1)}>
@@ -183,7 +174,7 @@ const Checkout = () => {
                     <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=ESewa_Payment_For_Elsa_Diary" alt="eSewa QR" />
                     <span>@elsadiary.official</span>
                   </QRPlaceholder>
-                  <p className="hint">Please include Order ID <b>{orderDetails.id}</b> in the remarks.</p>
+                  <p className="hint">Please include Order ID <b>{placedOrder?.id ?? 'pending'}</b> in the remarks.</p>
                 </DetailView>
               )}
 
@@ -274,7 +265,8 @@ const PageWrapper = styled.div`
 const Container = styled.div` 
   max-width: 1080px; 
   margin: 0 auto; 
-  padding: 60px 5%; 
+  min-width: 0;
+  padding: clamp(32px, 6vw, 60px) 5%; 
 `;
 
 const Header = styled.div`

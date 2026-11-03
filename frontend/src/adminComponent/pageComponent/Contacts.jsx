@@ -17,7 +17,7 @@ const ContactsPage = () => {
   };
 
   const handleSaveNote = async () => {
-    const result = await patch(`contact/detail/${editingContact.id}`, { admin_note: tempNote });
+    const result = await patch(`contact/detail/${editingContact.id}/`, { admin_note: tempNote });
     if (result.success) {
       setContacts(prev => prev.map(c => c.id === editingContact.id ? { ...c, admin_note: tempNote } : c));
     }
@@ -33,7 +33,7 @@ const ContactsPage = () => {
   }, [get]);
 
   const deleteContact = async (contactId) => {
-    const result = await del(`contact/detail/${contactId}`);
+    const result = await del(`contact/detail/${contactId}/`);
     if (result.success) setContacts(prev => prev.filter(c => c.id !== contactId));
   };
 
@@ -62,7 +62,7 @@ const ContactsPage = () => {
                   <UserInfo>
                     <div className="avatar"><User size={18} /></div>
                     <div>
-                      <span className="name">{contact.name}</span>
+                      <span className="name">{contact.full_name || contact.name}</span>
                       <span className="email">{contact.email}</span>
                     </div>
                   </UserInfo>
@@ -79,7 +79,7 @@ const ContactsPage = () => {
                   </NoteArea>
                 </td>
                 <td>
-                  <StatusBadge $status={contact.status}>{contact.status}</StatusBadge>
+                  <StatusBadge $status={contact.status || "new"}>{contact.status || "new"}</StatusBadge>
                 </td>
                 <td className="center">
                   <ActionGroup>
@@ -101,7 +101,7 @@ const ContactsPage = () => {
               <button className="close-btn" onClick={() => setIsModalOpen(false)}><X size={20} /></button>
             </ModalHeader>
             <ModalBody>
-              <p>For: <strong>{editingContact?.name}</strong></p>
+              <p>For: <strong>{editingContact?.full_name}</strong></p>
               <textarea value={tempNote} onChange={(e) => setTempNote(e.target.value)} placeholder="Add internal context here..." autoFocus />
             </ModalBody>
             <ModalFooter>
@@ -117,10 +117,10 @@ const ContactsPage = () => {
 
 const Container = styled.div` font-family: 'DM Sans', sans-serif; `;
 const PageHeader = styled.div` margin-bottom: 30px; h2 { color: #2A1F10; font-size: 1.8rem; margin: 0; } p { color: #8A7B6D; margin: 5px 0 0; } `;
-const TableCard = styled.div` background: white; border-radius: 20px; border: 1px solid #EAE3D6; overflow: hidden; box-shadow: 0 4px 15px rgba(42,31,16,0.05); `;
+const TableCard = styled.div` background: white; border-radius: 20px; border: 1px solid #EAE3D6; overflow-x: auto; -webkit-overflow-scrolling: touch; box-shadow: 0 4px 15px rgba(42,31,16,0.05); `;
 
 const StyledTable = styled.table`
-  width: 100%; border-collapse: collapse;
+  width: 100%; min-width: 720px; border-collapse: collapse;
   th { text-align: left; padding: 20px; color: #8A7B6D; font-size: 0.75rem; text-transform: uppercase; border-bottom: 1px solid #F5F2EE; }
   td { padding: 20px; border-bottom: 1px solid #F5F2EE; }
   .center { text-align: center; }

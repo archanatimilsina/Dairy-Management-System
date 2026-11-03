@@ -1,19 +1,10 @@
 import React, { useState } from 'react';
-import styled, { createGlobalStyle } from 'styled-components';
+import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom'; 
 import { Mail, Phone, MapPin, Send, MessageSquare, User, Notebook, ArrowLeft } from 'lucide-react';
 import useApi from '../../hooks/useApi';
 import { motion } from 'framer-motion';
 
-const LocalStyle = createGlobalStyle`
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@600;700;800&display=swap');
-  
-  body {
-    background-color: #FAF7F2;
-    font-family: 'DM Sans', sans-serif;
-    color: #2A1F10;
-  }
-`;
 
 const Contact = () => {
   const { post } = useApi();
@@ -34,8 +25,15 @@ const Contact = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const lastSentRef = React.useRef(0);
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const now = Date.now();
+    if (now - lastSentRef.current < 10000) {
+      setErrorMessage('Please wait a few seconds before sending again.');
+      return;
+    }
+    lastSentRef.current = now;
     setStatus('sending');
     
     const result = await post('contact/listCreate/', formData);
@@ -57,7 +55,7 @@ const Contact = () => {
 
   return (
     <PageWrapper>
-      <LocalStyle />
+      
       <Container className="page-fade-in">
         <SectionTitle>
           <BackButton onClick={() => navigate(-1)}>
@@ -123,6 +121,7 @@ const Contact = () => {
                     onChange={handleChange}
                     placeholder="Your Name" 
                     required 
+                    maxLength={200}
                   />
                 </FormGroup>
 
@@ -135,6 +134,7 @@ const Contact = () => {
                     onChange={handleChange}
                     placeholder="your@email.com" 
                     required 
+                    maxLength={200}
                   />
                 </FormGroup>
 
@@ -147,6 +147,7 @@ const Contact = () => {
                     onChange={handleChange}
                     placeholder="What is this about?" 
                     required 
+                    maxLength={200}
                   />
                 </FormGroup>
 
@@ -159,6 +160,7 @@ const Contact = () => {
                     rows="5" 
                     placeholder="Tell us more..." 
                     required
+                    maxLength={1000}
                   ></textarea>
                 </FormGroup>
 
@@ -185,7 +187,8 @@ const PageWrapper = styled.div`
 const Container = styled.div`
   max-width: 1140px; 
   margin: 0 auto; 
-  padding: 80px 5%;
+  padding: clamp(40px, 8vw, 80px) 5%;
+  min-width: 0;
 `;
 
 const SectionTitle = styled.div`
@@ -333,7 +336,7 @@ const FormGroup = styled.div`
     border: 1px solid #D8CFBE;
     background: #FFFFFF; 
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.98rem;
+    font-size: 16px;
     color: #2A1F10;
     transition: all 0.25s ease;
     box-sizing: border-box;

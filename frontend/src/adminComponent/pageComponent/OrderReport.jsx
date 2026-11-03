@@ -24,17 +24,18 @@ const OrdersReport = () => {
     email: "",
     contact_number: "",
     location: "", 
-    order_type: "Physical",
+    order_type: "Cash",
     delivery_fee: 0,
     admin_note: "",
     items: [], 
   });
 
+  const toList = (d) => Array.isArray(d) ? d : (d?.results || []);
   useEffect(() => {
     const fetchProducts = async () => {
       const result = await get('product/listCreate/');
       if (result.success) {
-        setProductOptions(result.data.results);
+        setProductOptions(toList(result.data));
       }
     };
     if (isModalOpen) fetchProducts();
@@ -43,10 +44,11 @@ const OrdersReport = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       const result = await get('order/listCreate/');
-      if (result.success) {     
-        const accepted = result.data.filter(order => order.order_status === "accepted");
-        const pending = result.data.filter(order => order.order_status === "pending");
-        const rejected = result.data.filter(order => order.order_status === "rejected");
+      if (result.success) {
+        const list = toList(result.data);
+        const accepted = list.filter(order => order.order_status === "accepted" || order.order_status === "resolved");
+        const pending = toList(result.data).filter(order => order.order_status === "pending");
+        const rejected = toList(result.data).filter(order => order.order_status === "rejected");
         setAcceptedOrders(accepted); 
         setRejectedOrders(rejected);
         setPendingRequest(pending);
@@ -62,9 +64,9 @@ const OrdersReport = () => {
     if (result.success) {
       const refresh = await get('order/listCreate/');
       if (refresh.success) {
-        setAcceptedOrders(refresh.data.filter(order => order.order_status === "accepted"));
-        setPendingRequest(refresh.data.filter(order => order.order_status === "pending"));
-        setRejectedOrders(refresh.data.filter(order => order.order_status === "rejected"));
+        setAcceptedOrders(toList(refresh.data).filter(order => order.order_status === "accepted" || order.order_status === "resolved"));
+        setPendingRequest(toList(refresh.data).filter(order => order.order_status === "pending"));
+        setRejectedOrders(toList(refresh.data).filter(order => order.order_status === "rejected"));
       }
       setIsModalOpen(false);
       resetForm();
@@ -74,7 +76,7 @@ const OrdersReport = () => {
   const resetForm = () => {
     setNewOrder({
       full_name: "", email: "", contact_number: "", location: "",
-      order_type: "Physical", delivery_fee: 0, admin_note: "", items: [], 
+      order_type: "Cash", delivery_fee: 0, admin_note: "", items: [], 
     });
   };
 
@@ -92,38 +94,38 @@ const OrdersReport = () => {
   };
 
   const acceptOrder = async (orderId) => {
-    const result = await patch(`order/detail/${orderId}`, { order_status: "accepted" });
+    const result = await patch(`order/detail/${orderId}/`, { order_status: "accepted" });
     if (result.success) {
       const refresh = await get('order/listCreate/');
       if (refresh.success) {
-        setAcceptedOrders(refresh.data.filter(o => o.order_status === "accepted"));
-        setPendingRequest(refresh.data.filter(o => o.order_status === "pending"));
-        setRejectedOrders(refresh.data.filter(o => o.order_status === "rejected"));
+        setAcceptedOrders(toList(refresh.data).filter(o => o.order_status === "accepted" || o.order_status === "resolved"));
+        setPendingRequest(toList(refresh.data).filter(o => o.order_status === "pending"));
+        setRejectedOrders(toList(refresh.data).filter(o => o.order_status === "rejected"));
       }
       setIsRequestDrawerOpen(false);
     }
   };
 
   const rejectRequest = async (orderId) => {
-    const result = await patch(`order/detail/${orderId}`, { order_status: "rejected" });
+    const result = await patch(`order/detail/${orderId}/`, { order_status: "rejected" });
     if (result.success) {
       const refresh = await get('order/listCreate/');
       if (refresh.success) {
-        setAcceptedOrders(refresh.data.filter(o => o.order_status === "accepted"));
-        setPendingRequest(refresh.data.filter(o => o.order_status === "pending"));
-        setRejectedOrders(refresh.data.filter(o => o.order_status === "rejected"));
+        setAcceptedOrders(toList(refresh.data).filter(o => o.order_status === "accepted" || o.order_status === "resolved"));
+        setPendingRequest(toList(refresh.data).filter(o => o.order_status === "pending"));
+        setRejectedOrders(toList(refresh.data).filter(o => o.order_status === "rejected"));
       }
     }
   };
 
   const resolveOrder = async (orderId) => {
-    const result = await patch(`order/detail/${orderId}`, { order_status: "resolved" });
+    const result = await patch(`order/detail/${orderId}/`, { order_status: "resolved" });
     if (result.success) {
       const refresh = await get('order/listCreate/');
       if (refresh.success) {
-        setAcceptedOrders(refresh.data.filter(o => o.order_status === "accepted"));
-        setPendingRequest(refresh.data.filter(o => o.order_status === "pending"));
-        setRejectedOrders(refresh.data.filter(o => o.order_status === "rejected"));
+        setAcceptedOrders(toList(refresh.data).filter(o => o.order_status === "accepted" || o.order_status === "resolved"));
+        setPendingRequest(toList(refresh.data).filter(o => o.order_status === "pending"));
+        setRejectedOrders(toList(refresh.data).filter(o => o.order_status === "rejected"));
       }
     }
   };
@@ -132,8 +134,9 @@ const OrdersReport = () => {
   const finalTotal = itemsTotal + Number(newOrder.delivery_fee);
 
   const pendingRequestsCount = pendingOrders.filter(o => o.order_status === 'pending').length;
+  const normType = (v) => (v === 'Physical' ? 'Cash' : v);
   const filteredOrders = acceptedOrders.filter(o => {
-    if (filter !== 'all' && o.order_type !== filter) return false;
+    if (filter !== 'all' && normType(o.order_type) !== normType(filter)) return false;
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     return (
@@ -377,30 +380,30 @@ const RequestActions = styled.div`
   }
 `;
 
-const Container = styled.div` padding: 30px; background: #f8fafc; min-height: 100vh; `;
-const SectionHeader = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; h1 { font-size: 1.8rem; color: #0f172a; margin: 0; } p { color: #64748b; margin-top: 4px; } `;
+const Container = styled.div` padding: clamp(16px, 3vw, 30px); background: #f8fafc; min-height: 100vh; min-width: 0; `;
+const SectionHeader = styled.div` display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 40px; h1 { font-size: 1.8rem; color: #0f172a; margin: 0; } p { color: #64748b; margin-top: 4px; } `;
 const ActionButtons = styled.div` display: flex; gap: 15px; `;
 const CreateBtn = styled.button` background: rgba(42, 31, 16, 0.5); color: white; border: none; padding: 14px 28px; border-radius: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.2s; &:hover { background: rgba(42, 31, 16, 0.5); transform: translateY(-2px); } `;
 const RequestBtn = styled.button` background: #fff; color: #0f172a; border: 1px solid #e2e8f0; padding: 14px 28px; border-radius: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; position: relative; transition: all 0.2s; &:hover { background: #f1f5f9; } .count { position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; font-size: 0.7rem; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 3px solid #f8fafc; } `;
-const ControlRow = styled.div` display: flex; justify-content: space-between; margin-bottom: 30px; gap: 20px; `;
+const ControlRow = styled.div` display: flex; justify-content: space-between; margin-bottom: 30px; gap: 12px 20px; flex-wrap: wrap; `;
 const FilterBar = styled.div` display: flex; background: #fff; padding: 6px; border-radius: 14px; border: 1px solid #e2e8f0; button { padding: 10px 20px; border: none; background: transparent; cursor: pointer; border-radius: 10px; font-weight: 600; color: #64748b; transition: all 0.2s; &.active { background: #0f172a; color: #fff; } } `;
 const SearchBar = styled.div` display: flex; align-items: center; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0 15px; flex: 1; max-width: 400px; input { border: none; outline: none; width: 100%; padding-left: 10px; height: 48px; } svg { color: #94a3b8; } `;
-const OrderGrid = styled.div` display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 24px; `;
+const OrderGrid = styled.div` display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 24px; `;
 const OrderCard = styled.div` background: white; border-radius: 24px; padding: 24px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; .order-id { font-weight: 700; color: #94a3b8; font-size: 0.85rem; } } h4 { margin: 0 0 15px 0; font-size: 1.2rem; color: #0f172a; } .contact-details { font-size: 0.85rem; color: #475569; display: flex; align-items: center; gap: 8px; margin: 4px 0; } `;
-const StatusTag = styled.span` font-size: 0.7rem; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; font-weight: 800; &.pending { background: #fef3c7; color: #92400e; } &.success { background: #dcfce7; color: #166534; } &.cancelled { background: #fee2e2; color: #991b1b; } `;
+const StatusTag = styled.span` font-size: 0.7rem; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; font-weight: 800; &.pending { background: #fef3c7; color: #92400e; } &.success { background: #dcfce7; color: #166534; } &.cancelled { background: #fee2e2; color: #991b1b; } &.delivering, &.taken { background: #dbeafe; color: #1e40af; } &.delayed { background: #ffedd5; color: #9a3412; } &.resolved { background: #e0e7ff; color: #3730a3; } `;
 const ItemsPreview = styled.div` background: #f8fafc; padding: 12px; border-radius: 12px; margin-top: 15px; .item-row { display: flex; justify-content: space-between; font-size: 0.85rem; color: #1e293b; font-weight: 600; margin-bottom: 4px; } `;
 const PriceSection = styled.div` margin-top: 24px; display: flex; justify-content: space-between; border-top: 1px solid #f1f5f9; padding-top: 20px; .method-label, .total-label { font-size: 0.7rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 4px; } .payment-tag { font-size: 0.8rem; font-weight: 800; color: #3b82f6; } .amount { font-size: 1.4rem; font-weight: 900; } `;
 const DrawerOverlay = styled.div` position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 1100; display: flex; justify-content: flex-end; `;
-const DrawerContent = styled.div` width: 450px; height: 100%; background: white; padding: 40px; display: flex; flex-direction: column; animation: slideIn 0.3s ease-out; @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } } `;
+const DrawerContent = styled.div` width: min(450px, 100vw); height: 100%; background: white; padding: 40px; display: flex; flex-direction: column; animation: slideIn 0.3s ease-out; @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } } `;
 const DrawerHeader = styled.div` display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; h2 { margin: 0; font-size: 1.6rem; color: #0f172a; } p { color: #64748b; font-size: 0.9rem; margin: 5px 0 0 0; } `;
 const CloseButton = styled.button` background: #f1f5f9; border: none; cursor: pointer; border-radius: 12px; padding: 8px; color: #64748b; `;
 const RequestList = styled.div` flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; `;
 const EmptyRequests = styled.div` display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; color: #94a3b8; font-weight: 600; `;
 const ModalOverlay = styled.div` position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: center; justify-content: center; `;
-const ModalCard = styled.div` background: white; width: 600px; border-radius: 32px; padding: 40px; max-height: 85vh; overflow-y: auto; `;
+const ModalCard = styled.div` background: white; width: min(600px, calc(100vw - 32px)); border-radius: 32px; padding: 40px; max-height: 85vh; overflow-y: auto; `;
 const ModalHeader = styled.div` display: flex; justify-content: space-between; margin-bottom: 30px; h3 { margin: 0; } button { background: #f1f5f9; border: none; border-radius: 12px; padding: 8px; } `;
 const FormBody = styled.div` display: flex; flex-direction: column; gap: 20px; `;
-const Row = styled.div` display: flex; gap: 20px; & > div { flex: 1; } `;
+const Row = styled.div` display: flex; gap: 20px; & > div { flex: 1; min-width: 0; } @media (max-width: 640px) { flex-direction: column; } `;
 const InputGroup = styled.div` label { font-size: 0.8rem; font-weight: 700; margin-bottom: 8px; display: block; } input, textarea, select { width: 100%; padding: 14px; border-radius: 14px; border: 1px solid #e2e8f0; } `;
 const SectionLabel = styled.div` font-size: 0.9rem; font-weight: 800; margin-top: 10px; display: flex; align-items: center; gap: 10px; `;
 const ProductGrid = styled.div` display: grid; grid-template-columns: 1fr 1fr; gap: 12px; `;

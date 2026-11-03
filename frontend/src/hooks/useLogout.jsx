@@ -20,6 +20,7 @@ export const useLogout = () => {
       localStorage.removeItem("IsLoggedIn");
       localStorage.removeItem("username");
       localStorage.removeItem("email");
+      localStorage.removeItem("is_staff");
       navigate("/loginPage");
     }
   };

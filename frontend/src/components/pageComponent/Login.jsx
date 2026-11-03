@@ -1,18 +1,9 @@
 import React, { useState } from 'react';
-import styled, { createGlobalStyle } from 'styled-components';
+import styled from 'styled-components';
 import { Mail, Lock, ArrowRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import useApi from '../../hooks/useApi';
 import { Link, useNavigate } from 'react-router-dom';
 
-const LocalStyle = createGlobalStyle`
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@600;700;800&display=swap');
-  
-  body {
-    background-color: #FAF7F2;
-    font-family: 'DM Sans', sans-serif;
-    color: #2A1F10;
-  }
-`;
 
 const LoginPage = () => {
   const { error, loading, post } = useApi();
@@ -36,6 +27,7 @@ const LoginPage = () => {
       localStorage.setItem('access_token', result.data?.access);
       localStorage.setItem('refresh_token', result.data?.refresh);
       localStorage.setItem("IsLoggedIn", true);
+      localStorage.setItem("is_staff", String(Boolean(result.data?.user?.is_staff)));
       navigate('/');
     }
   };
@@ -51,7 +43,7 @@ const LoginPage = () => {
 
   return (
     <AuthWrapper>
-      <LocalStyle />
+      
       <AuthCard>
         <LogoArea>
           <h2>Welcome Back</h2>
@@ -118,7 +110,7 @@ const LoginPage = () => {
 export default LoginPage;
 
 const AuthWrapper = styled.div`
-  min-height: 100vh;
+  min-height: 100vh; min-height: 100dvh; width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -156,7 +148,7 @@ const LogoArea = styled.div`
   
   p { 
     color: #6B5C4A; 
-    font-size: 0.98rem;
+    font-size: 16px;
     font-weight: 500;
   }
 `;
@@ -230,7 +222,7 @@ const InputGroup = styled.div`
       width: 100%; 
       margin-left: 12px; 
       font-family: 'DM Sans', sans-serif;
-      font-size: 0.98rem;
+      font-size: 16px;
       color: #2A1F10;
       font-weight: 500;
       box-sizing: border-box;

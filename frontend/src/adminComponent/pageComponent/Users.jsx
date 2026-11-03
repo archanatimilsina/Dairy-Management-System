@@ -260,12 +260,14 @@ const FilterBtn = styled.button`
 const TableContainer = styled.div`
   background: white;
   border-radius: 20px;
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid #EAE3D6;
 `;
 
 const UserTable = styled.table`
   width: 100%;
+  min-width: 720px;
   border-collapse: collapse;
   th {
     text-align: left;

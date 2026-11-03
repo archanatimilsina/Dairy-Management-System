@@ -22,10 +22,16 @@ class CartSerializer(serializers.ModelSerializer):
    price = serializers.ReadOnlyField(source = 'product.price')
    unit = serializers.ReadOnlyField(source = 'product.category.unit')
    picture_src = serializers.ImageField(source = 'product.picture_src',read_only=True)
+   quantity = serializers.IntegerField(min_value=1, max_value=99)
 
    class Meta:
       model = Cart
       fields = ['id', 'user', 'product', 'quantity', 'added_at','product_name','category','price','unit','picture_src']
+      read_only_fields = ['id', 'added_at', 'user']
+
+   def update(self, instance, validated_data):
+       validated_data.pop('product', None)
+       return super().update(instance, validated_data)
 
 
       

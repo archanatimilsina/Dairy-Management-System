@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
-    unit = models.CharField(max_length=20) 
+    unit = models.CharField(max_length=20)
 
     def __str__(self):
         return f"{self.name}"
@@ -17,7 +17,7 @@ class Product(models.Model):
     stock=models.IntegerField(default=0)
     def __str__(self):
         return self.product_name
-    
+
 
 class Cart(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -25,7 +25,11 @@ class Cart(models.Model):
     quantity = models.PositiveIntegerField(default=1)
     added_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        constraints = [
+            # One row per (user, product); adds merge instead of duplicating.
+            models.UniqueConstraint(fields=['user', 'product'], name='unique_cart_user_product'),
+        ]
+
     def __str__(self):
         return f"{self.user.username} - {self.product.product_name}"
-
-
