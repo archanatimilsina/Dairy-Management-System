@@ -17,9 +17,50 @@ from .services import send_custom_mail
 from rest_framework import generics
 from .models import CompanyConfiguration
 import logging
-from django.db import DatabaseError, IntegrityError, transaction
+from django.db import (
+    DatabaseError, IntegrityError, OperationalError, ProgrammingError, transaction
+)
 
 logger = logging.getLogger(__name__)
+
+
+def _database_error_response(exc, operation):
+    """Turn a database exception into a JSON response the frontend can show.
+
+    Not all DatabaseError subclasses mean the same thing:
+      * OperationalError -> the database is unreachable/down; retrying later
+        is exactly the right user action.
+      * ProgrammingError -> the schema is wrong (a table/column is missing,
+        i.e. migrations were never applied). Retrying forever cannot help,
+        and calling this "temporarily unavailable" hides a deploy problem.
+    """
+    if isinstance(exc, ProgrammingError):
+        logger.exception("%s: database schema error (pending migrations?)", operation)
+        return Response(
+            {
+                "error": "Database schema is out of date. An administrator must run migrations.",
+                "code": "db_schema_out_of_date",
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+    if isinstance(exc, OperationalError):
+        logger.exception("%s: database unavailable", operation)
+        return Response(
+            {
+                "error": "Database temporarily unavailable. Please try again in a minute.",
+                "code": "db_unavailable",
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+    logger.exception("%s: database error", operation)
+    return Response(
+        {
+            "error": "Database error. Please try again in a minute.",
+            "code": "db_error",
+        },
+        status=status.HTTP_503_SERVICE_UNAVAILABLE,
+    )
+
 
 class RegisterView(APIView):
     # No JWT parsing here: DRF authenticates before checking permissions, so an
@@ -29,9 +70,9 @@ class RegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        # Every failure path below returns JSON. Letting an OperationalError
-        # (DB down, migrations missing) escape would produce Django's bare
-        # HTML "Server Error (500)" page, which the frontend cannot parse.
+        # Every failure path below returns JSON. Letting a database exception
+        # escape would produce Django's bare HTML "Server Error (500)" page,
+        # which the frontend cannot parse.
         try:
             serializer = RegisterSerializer(data=request.data)
             if not serializer.is_valid():
@@ -53,12 +94,8 @@ class RegisterView(APIView):
                     {"username": ["A user with these credentials already exists."]},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-        except DatabaseError:
-            logger.exception("register: database unavailable")
-            return Response(
-                {"error": "Database temporarily unavailable. Please try again in a minute."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
+        except DatabaseError as exc:
+            return _database_error_response(exc, "register")
         except Exception:
             logger.exception("register failed")
             return Response(
@@ -123,12 +160,8 @@ class LoginView(APIView):
                 {"error": "Invalid username or password"},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-        except DatabaseError:
-            logger.exception("login: database unavailable")
-            return Response(
-                {"error": "Database temporarily unavailable. Please try again in a minute."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
+        except DatabaseError as exc:
+            return _database_error_response(exc, "login")
         except Exception:
             logger.exception("login failed")
             return Response(
