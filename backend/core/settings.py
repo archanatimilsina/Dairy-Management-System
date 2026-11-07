@@ -272,6 +272,25 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', '15'))
 PASSWORD_RESET_TIMEOUT = 86400
 
+# Without this, Django mails 500 tracebacks to ADMINS (empty here) and prints
+# NOTHING to stderr -- so Render logs show `POST /register/ 500` with zero
+# detail and the owner is left staring at a bare "Server Error (500)" page.
+# Route them to the console (gunicorn forwards stderr to Render logs).
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'default': {'format': '[{levelname}] {name}: {message}', 'style': '{'},
+    },
+    'handlers': {
+        'console': {'class': 'logging.StreamHandler', 'formatter': 'default'},
+    },
+    'loggers': {
+        'django.request': {'handlers': ['console'], 'level': 'ERROR', 'propagate': False},
+        'account': {'handlers': ['console'], 'level': 'ERROR', 'propagate': False},
+    },
+}
+
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

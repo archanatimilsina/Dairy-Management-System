@@ -74,7 +74,14 @@ export const isNetworkError = (error) =>
 export const friendlyAuthError = (error, fallback = "Something went wrong. Please try again.") => {
     if (error == null) return fallback;
     if (typeof error === "string") {
-        if (error.toLowerCase().includes("timeout of")) {
+        const low = error.toLowerCase();
+        // Django's DEBUG=False crash page is HTML, not JSON. Never paint
+        // markup into the UI -- it means the backend itself crashed (check
+        // Render logs / /health/ for the real cause).
+        if (low.includes("<!doctype") || low.includes("<html")) {
+            return "Server error (500). The backend crashed handling this request -- please try again in a minute, and if it persists the server logs will have the cause.";
+        }
+        if (low.includes("timeout of")) {
             return "The server is taking too long to respond (it sleeps when idle on free hosting). Please wait a few seconds and try again.";
         }
         return error;

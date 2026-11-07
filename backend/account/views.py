@@ -16,6 +16,10 @@ from django.contrib.auth.tokens import default_token_generator
 from .services import send_custom_mail
 from rest_framework import generics
 from .models import CompanyConfiguration
+import logging
+from django.db import DatabaseError, IntegrityError, transaction
+
+logger = logging.getLogger(__name__)
 
 class RegisterView(APIView):
     # No JWT parsing here: DRF authenticates before checking permissions, so an
@@ -25,23 +29,42 @@ class RegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        serializer = RegisterSerializer(data=request.data)
-        if not serializer.is_valid():
-            print(serializer.errors)
-            return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Every failure path below returns JSON. Letting an OperationalError
+        # (DB down, migrations missing) escape would produce Django's bare
+        # HTML "Server Error (500)" page, which the frontend cannot parse.
         try:
-            user = serializer.save()
-        except Exception:
-            # Race: two simultaneous signups with the same username/email pass
-            # validation, then one hits the DB unique constraint. Return a 400
-            # shaped like a validation error, not a 500.
-            import logging
-            logging.getLogger(__name__).exception("register save failed")
+            serializer = RegisterSerializer(data=request.data)
+            if not serializer.is_valid():
+                return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                # Mint the refresh token inside the same transaction as the
+                # user/profile writes: OutstandingToken.objects.create() runs
+                # inside for_user(), so if the token_blacklist tables are
+                # missing (migrations not applied) the user row rolls back too
+                # and a retry after migrating succeeds instead of wrongly
+                # reporting "already exists".
+                with transaction.atomic():
+                    user = serializer.save()
+                    refresh = RefreshToken.for_user(user)
+            except IntegrityError:
+                # Race: two simultaneous signups pass validation, then one
+                # hits the DB unique constraint. 400, not 500.
+                return Response(
+                    {"username": ["A user with these credentials already exists."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        except DatabaseError:
+            logger.exception("register: database unavailable")
             return Response(
-                {"username": ["A user with these credentials already exists."]},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"error": "Database temporarily unavailable. Please try again in a minute."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
-        refresh = RefreshToken.for_user(user)
+        except Exception:
+            logger.exception("register failed")
+            return Response(
+                {"error": "Server error while creating your account. Please try again."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
         return Response({
             'user': serializer.data,
             'access': str(refresh.access_token),
@@ -55,49 +78,62 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        identifier = (request.data.get('emailOrUsername') or '').strip()
-        password = request.data.get('password')
-        if not identifier or not password:
-            return Response({"error": "Both identifier and password are required"}, status=status.HTTP_400_BAD_REQUEST)
+        # All DB/token failures return JSON (503/500), never Django's HTML
+        # 500 page, so the frontend can show a real message.
+        try:
+            identifier = (request.data.get('emailOrUsername') or '').strip()
+            password = request.data.get('password')
+            if not identifier or not password:
+                return Response({"error": "Both identifier and password are required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # One indexed query for the user, one password verification.
-        # No select_related('profile'): the login response never uses the
-        # profile, so the JOIN is pure waste. .only() keeps the row small on
-        # the Render -> Supabase WAN link.
-        user = None
-        if "@" in identifier:
-            user = (User.objects
-                    .filter(email__iexact=identifier)
-                    .only('id', 'username', 'email', 'password', 'is_active', 'is_staff')
-                    .order_by('id')
-                    .first())
-        else:
-            user = (User.objects
-                    .filter(username=identifier)
-                    .only('id', 'username', 'email', 'password', 'is_active', 'is_staff')
-                    .first())
+            # One indexed query for the user, one password verification.
+            # No select_related('profile'): the login response never uses the
+            # profile, so the JOIN is pure waste. .only() keeps the row small on
+            # the Render -> Supabase WAN link.
+            user = None
+            if "@" in identifier:
+                user = (User.objects
+                        .filter(email__iexact=identifier)
+                        .only('id', 'username', 'email', 'password', 'is_active', 'is_staff')
+                        .order_by('id')
+                        .first())
+            else:
+                user = (User.objects
+                        .filter(username=identifier)
+                        .only('id', 'username', 'email', 'password', 'is_active', 'is_staff')
+                        .first())
 
-        # is_active mirrors ModelBackend.user_can_authenticate, so deactivated
-        # accounts keep failing exactly as before. last_login is deliberately not
-        # touched: this API never calls django.contrib.auth.login(), so Django 6
-        # never fired the user_logged_in signal here either.
-        if user is not None and user.is_active and user.check_password(password):
-            refresh = RefreshToken.for_user(user)
-            return Response({
-                'user': {
-                    'id': user.id,
-                    'username': user.username,
-                    'email': user.email,
-                    'is_staff': user.is_staff,
-                },
-                'access': str(refresh.access_token),
-                'refresh': str(refresh)
-           }, status=status.HTTP_200_OK,
-           )
-        else:
+            # is_active mirrors ModelBackend.user_can_authenticate, so deactivated
+            # accounts keep failing exactly as before.
+            if user is not None and user.is_active and user.check_password(password):
+                # OutstandingToken.objects.create() runs inside for_user(): a
+                # missing token_blacklist migration must come back as JSON.
+                refresh = RefreshToken.for_user(user)
+                return Response({
+                    'user': {
+                        'id': user.id,
+                        'username': user.username,
+                        'email': user.email,
+                        'is_staff': user.is_staff,
+                    },
+                    'access': str(refresh.access_token),
+                    'refresh': str(refresh)
+                }, status=status.HTTP_200_OK)
             return Response(
                 {"error": "Invalid username or password"},
                 status=status.HTTP_401_UNAUTHORIZED
+            )
+        except DatabaseError:
+            logger.exception("login: database unavailable")
+            return Response(
+                {"error": "Database temporarily unavailable. Please try again in a minute."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        except Exception:
+            logger.exception("login failed")
+            return Response(
+                {"error": "Server error while signing in. Please try again."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
           
 

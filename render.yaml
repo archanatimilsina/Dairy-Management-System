@@ -6,11 +6,16 @@ services:
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
     # preDeployCommand runs once per deploy, NOT on every cold-start wake.
     # The old startCommand ran `migrate` on every wake, adding 5-15s to the
-    # first /register/ or /login/ after idle -- the main cause of the 20s
-    # axios timeout. Migrations now run at deploy time; wake-ups boot
-    # gunicorn directly. Single worker + preload halves RAM (~512MB free tier)
-    # and cuts cold-start import time; threads handle concurrency (password
-    # hashing releases the GIL, DB waits don't need processes).
+    # first /register/ or /login/ after idle. Migrations now run at deploy
+    # time; wake-ups boot gunicorn directly. Single worker + preload halves
+    # RAM (~512MB free tier) and cuts cold-start import time.
+    # NOTE: if this service was created manually in the Render dashboard (not
+    # via Blueprint sync), render.yaml is IGNORED -- mirror these two commands
+    # in the dashboard: Settings -> Build & Deploy -> Pre-Deploy Command
+    # (`python manage.py migrate --noinput`) and Start Command (the gunicorn
+    # line below). Skipping migrate leaves tables like
+    # token_blacklist_outstandingtoken missing, which makes EVERY /register/
+    # and /login/ return HTML "Server Error (500)".
     preDeployCommand: python manage.py migrate --noinput
     startCommand: gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 8 --worker-class gthread --timeout 120 --graceful-timeout 30 --keep-alive 5 --preload --max-requests 1000 --max-requests-jitter 200 --access-logfile - --error-logfile -
     healthCheckPath: /health/

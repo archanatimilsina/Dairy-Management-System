@@ -9,7 +9,10 @@ class HealthView(APIView):
 
     A bare `GET /health/` that never touches the database proves gunicorn and
     Django are up; the `database` block tells you whether the Postgres
-    connection string in DATABASE_URL actually works.
+    connection string in DATABASE_URL actually works. The truncated error
+    string is what lets you tell "migrations missing" apart from "host
+    unreachable" without Render log access (psycopg2 errors never contain
+    the password, only the host/reason).
     """
 
     authentication_classes = []
@@ -26,11 +29,13 @@ class HealthView(APIView):
             payload["database"] = {
                 "ok": True,
             }
-        except Exception:  # noqa: BLE001 - we want the reason, not a crash
+        except Exception as e:  # noqa: BLE001 - we want the reason, not a crash
+            import logging
+            logging.getLogger('django.request').exception('health: database unreachable')
             payload["status"] = "degraded"
             payload["database"] = {
                 "ok": False,
-                "error": "unavailable",
+                "error": str(e)[:300],
             }
             status_code = 503
 
